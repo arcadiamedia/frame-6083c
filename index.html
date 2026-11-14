@@ -547,7 +547,7 @@ addEventListener('resize',resize);
 
 /* ---------- 交互 ---------- */
 /* 鼠标：左键拖拽旋转，Shift/右键/中键拖拽平移，滚轮缩放，点击拾取。旋转绕着按下去时光标指着的
-   那一点，缩放以光标指着的那一点为中心（那一点在屏幕上不动）。
+   那一点（见 pointAt；转的时候那一点上画着一个小圈），缩放以光标指着的那一点为中心（那一点在屏幕上不动）。
    触屏：单指旋转；双指捏合缩放（以两指中点为中心，指下那一点不动），两指一起挪
    = 平移（画面跟着手指走）；轻点拾取。pointer 事件按 pointerId 记住每根手指，
    每次只算增量，手指数变化时画面不跳。双指之后剩下的那根手指不再旋转、直到
@@ -564,14 +564,42 @@ function zoomTo(d){ return Math.max(radius*0.05,Math.min(radius*40,d)); }
 function two(){ const [p,q]=ptrs.values();
   return {x:(p.x+q.x)/2, y:(p.y+q.y)/2, d:Math.hypot(p.x-q.x,p.y-q.y)||1}; }
 /* ---- 转、缩都以光标（手指）指着的那一点为准，不是画面中心 ---- */
-/* 屏幕上这一点指着模型的哪里（世界坐标）：指着木料就是木料表面上那一点；指着空白处，取视线上和
-   镜头目标点一样深的那一点 */
+/* 屏幕上这一点指着模型的哪里（世界坐标）—— 转、缩的中心。
+   框架是空的：一堵墙九成是立柱之间的缝，光标多半落在缝里，正下方要么是背景，要么是从缝里露出来的、后面
+   几米远的另一堵墙。早先「压着木料取木料那一点，压着空白取镜头目标点那么深」：在缝里按下去转，转的中心在
+   几米开外，眼前这堵墙被甩着走 —— 用户（2026-11-14）：「有的时候它就是不能以鼠标光标位置为中心去旋转…
+   我总觉得它那个旋转中心会跑掉」。实测整栋楼的画面上，压着木料的点有两到七成是从别的板的缝里露出来的，
+   空白的点有两到六成紧挨着木料。现在按「光标落在哪块板上」来取：
+   ① 光标附近（四分之一个画面以内，pivR）露着木料的那些板里，光标落在谁的范围里（压着它的木料，或者
+      落在它的缝、洞里）—— 取最靠前的那一块，中心就是光标在这块板面上的那一点；
+   ② 正下方压着木料、它前面没有这样的板：木料表面上那一点（和原来一样）；
+   ③ 正下方是空白、紧挨着（PIVN 个像素以内）有比 ① 更靠前的木料：视线上和那根木料一样深的那一点
+      （光标贴在前面那堵墙的墙头、墙边外面一点，背后正好是另一堵墙的缝）；
+   ④ 光标不在哪块板的范围里、附近有木料：视线上和最近那根木料一样深的那一点；
+   ⑤ 附近什么都没有：落在哪块板的大洞里，就取那块板面上的一点；真在模型外面，取视线上和模型中心一样深的
+      那一点（不再取镜头目标点 —— 转过、缩过以后它不知道漂到哪去了）。
+   「附近」定得大：拉近以后立柱的间距在屏幕上就是一两百个像素；要拉近到一条缝比半个画面还宽、站在缝中间
+   指着后面的木料，取的才是后面那根。PIVT：前面的至少靠前这么多毫米才算数（墙角上两块板挨着）。 */
+const PIVT=150, PIVN=24;
+function pivR(){return Math.max(90,Math.min(240,Math.round(Math.min(cv.clientWidth||innerWidth,cv.clientHeight||innerHeight)/4)))}
 function pointAt(cx,cy){
-  const p=pickPiece(cx,cy);
-  if(p) return L2W(p.pi,rawHit(p,cx,cy).raw);
-  const ray=rayAt(cx,cy), cb=camBasis(), c=[center[0]+pan[0],center[1]+pan[1],center[2]+pan[2]],
-        den=V.dot(ray.d,cb.z), k=Math.abs(den)<1e-9?0:V.dot(V.sub(c,ray.o),cb.z)/den;
-  return [ray.o[0]+ray.d[0]*k,ray.o[1]+ray.d[1]*k,ray.o[2]+ray.d[2]*k];
+  const nb={r:pivR(),rn:PIVN}, p=pickPiece(cx,cy,nb), ray=rayAt(cx,cy), cb=camBasis(), dz=V.dot(ray.d,cb.z),
+        at=t=>[0,1,2].map(k=>ray.o[k]+ray.d[k]*t),
+        tAt=X=>(V.dot(V.sub(cb.e,ray.o),cb.z)-V.dot(V.sub(cb.e,X),cb.z))/dz,     // 光标这条视线上，和 X 一样深的地方
+        surf=(q,x,y)=>L2W(q.pi,rawHit(q,x,y).raw);                              // 木料 q 在屏幕 (x,y) 处的表面
+  let t0=null, tb=null, tn=null;
+  if(p){const P0=surf(p,cx,cy); t0=V.dot(V.sub(P0,ray.o),ray.d);
+    /* 视线没打中这根木料的准确外形（rawHit 退回了木料中心）：取这块板的面 */
+    const a=at(t0); if(Math.hypot(a[0]-P0[0],a[1]-P0[1],a[2]-P0[2])>1){const t=boxT(p.pi,ray); t0=t!=null?t:tAt(P0)}}
+  const pis=new Set(); (nb.ids||[]).forEach(id=>{const q=pieces[id-1]; if(q&&!(p&&q.pi===p.pi)) pis.add(q.pi)});
+  pis.forEach(pi=>{const t=boxT(pi,ray); if(t!=null&&(tb==null||t<tb)) tb=t});
+  if(t0!=null) return at(tb!=null&&tb<t0-PIVT?tb:t0);
+  (nb.close||[]).forEach(c=>{const q=pieces[c.id-1]; if(!q) return; const t=tAt(surf(q,c.x,c.y)); if(tn==null||t<tn) tn=t});
+  if(tb!=null) return at(tn!=null&&tn<tb-PIVT?tn:tb);
+  if(tn!=null) return at(tn);
+  if(nb.near){const q=pieces[nb.near.id-1]; if(q) return at(tAt(surf(q,nb.near.x,nb.near.y)))}
+  D.panels.forEach((_,pi)=>{if(!panelShown(pi)) return; const t=boxT(pi,ray); if(t!=null&&(tb==null||t<tb)) tb=t});
+  return at(tb!=null?tb:(V.dot(V.sub(cb.e,ray.o),cb.z)-depthSpan().dc)/dz);
 }
 /* 抓住世界点 P：记下它在镜头里的位置 s —— 从目标点量起，往右、往上、朝着镜头各多远 */
 function grab(P){const cb=camBasis(), r=[P[0]-center[0]-pan[0],P[1]-center[1]-pan[1],P[2]-center[2]-pan[2]];
@@ -599,7 +627,7 @@ cv.addEventListener('pointerdown',e=>{
   cv.classList.add('drag');
   if(ptrs.size===1||!gest)
     gest={moved:0,multi:ptrs.size>1,mouse:e.pointerType==='mouse',b:e.button};
-  else gest.multi=true;
+  else{gest.multi=true; if(gest.orb){gest.orb=0;redraw()}}      // 单指转着又放下一根手指：不转了，中心那个小圈收掉
 });
 cv.addEventListener('pointermove',e=>{
   const p=ptrs.get(e.pointerId);
@@ -616,6 +644,7 @@ cv.addEventListener('pointermove',e=>{
     else{
       /* 转第一下之前，先看光标（手指）指着哪：整个这一拖都绕着那一点转 */
       if(!gest.pv) gest.pv=grab(pointAt(e.clientX-dx,e.clientY-dy));
+      if(gest.moved>=(gest.mouse?4:10)) gest.orb=1;      // 真转起来了（不是点一下时手抖）：把中心画出来
       orbitBy(dx,dy,gest.pv); }
     redraw(); return;
   }
@@ -633,6 +662,7 @@ function lift(e,cancel){
   if(ptrs.size) return;             // 还有手指在屏上，手势没完
   cv.classList.remove('drag');
   const g=gest; gest=null;
+  if(g&&g.orb) redraw();            // 转完了：中心那个小圈收掉
   if(!cancel&&g&&!g.multi&&g.moved<(g.mouse?4:10)){
     if(g.mouse){setShift(e.shiftKey);setCtrl(guideKey(e))}   // Shift+点 = 锁定方向（Shift+拖 才是平移）；Ctrl+点 = 引导点
     tapAt(e.clientX,e.clientY,!g.mouse)}
@@ -654,7 +684,8 @@ cv.addEventListener('gesturestart',e=>e.preventDefault());
 let fb=null,tex=null,rb=null;
 /* 屏幕上这一点是哪根木料（没有就是 null）。只画进离屏的拾取缓冲，屏幕上的画面不动。
    给了 nb={r} 就连周围 r 个像素的一小块一起读回来：nb.ids = 这一圈里露出来的木料，
-   nb.shows(id,x,y) = 屏幕上 (x,y) 附近露没露出 id 这一根（取点吸附用） */
+   nb.shows(id,x,y) = 屏幕上 (x,y) 附近露没露出 id 这一根（取点吸附用），nb.near = 离得最近的那一根，
+   nb.close = 紧挨着的那几根（转的中心用，见 pointAt） */
 function pickPiece(cx,cy,nb){
   /* CSS 像素 -> 画布像素用画布自己的实际比例：缩放比变了而画布还没重排时，
      现查 devicePixelRatio 会读到别处的像素（点这根、选中那根） */
@@ -675,11 +706,22 @@ function pickPiece(cx,cy,nb){
   if(nb){
     const R=Math.ceil(nb.r*rx)+2, x0=Math.max(0,X-R), y0=Math.max(0,Y-R),
           w2=Math.min(w,X+R+1)-x0, h2=Math.min(h,Y+R+1)-y0, k=Math.max(2,Math.round(rx*2.5));
-    nb.ids=new Set(); nb.shows=()=>false;
+    nb.ids=new Set(); nb.shows=()=>false; nb.near=null; nb.close=[];
     if(w2>0&&h2>0){
       const buf=new Uint8Array(w2*h2*4), at=i=>buf[i]+buf[i+1]*256+buf[i+2]*65536;
       gl.readPixels(x0,y0,w2,h2,gl.RGBA,gl.UNSIGNED_BYTE,buf);
-      for(let i=0;i<buf.length;i+=4){const id=at(i);if(id)nb.ids.add(id)}
+      /* nb.near：这一圈里离 (cx,cy) 最近的那个露着木料的像素 —— 哪一根、在屏幕上哪（CSS 像素）；
+         nb.close（给了 nb.rn 才有）：紧挨着的 rn 个像素以内露着的每一根木料，各自离得最近的那个像素 */
+      /* 转的中心要读的那一块大（四分之一个画面）：高分屏上隔一个像素扫一个，少扫四分之三 —— 只是数有哪些
+         板、哪根离得近，差一个像素不要紧。取点吸附的那一小块照样一个不落 */
+      let bd=1e18, last=0; const rn2=nb.rn?nb.rn*rx*nb.rn*rx:-1, cl=new Map(), stp=nb.rn&&rx>=1.5?2:1;
+      /* 背景读出来不是 0：拾取缓冲清成了画面的底色，读回来是一个比木料总数大得多的数 —— 不是木料的都跳过 */
+      for(let b=0;b<h2;b+=stp) for(let a=0;a<w2;a+=stp){const id=at((b*w2+a)*4); if(!id||id>pieces.length) continue;
+        if(id!==last){nb.ids.add(id);last=id}
+        const u=a+x0-X, v=b+y0-Y, dd=u*u+v*v;
+        if(dd<bd){bd=dd; nb.near={id,x:(X+u)/rx,y:(h-Y-v)/ry}}
+        if(dd<=rn2){const c=cl.get(id); if(!c||dd<c.dd) cl.set(id,{id,dd,x:(X+u)/rx,y:(h-Y-v)/ry})}}
+      nb.close=Array.from(cl.values());
       nb.shows=(id,sx,sy)=>{const u=Math.round(sx*rx)-x0, v=Math.round(h-sy*ry)-y0;
         for(let b=Math.max(0,v-k);b<=Math.min(h2-1,v+k);b++)
           for(let a=Math.max(0,u-k);a<=Math.min(w2-1,u+k);a++) if(at((b*w2+a)*4)===id) return true;
@@ -708,11 +750,11 @@ function showInfo(p){
     ['类型',D.kinds[p.ki]],
     ['材料',p.mat||'—'],
     ['下料长',p.len+' mm'+(p.plies>1?` ×${p.plies} 片`:'')],
-    ['断面',`${Math.round(p.dx)} × ${Math.round(p.dy)} × ${Math.round(p.dz)}`],
-    /* 标高：世界坐标的 Z（零点就是模型的零点），这根木料最低的那一点、最高的那一点 ——
-       横的、竖的、斜的都这么算 */
-    ['底标高',Math.round(P0.tr[2]+bx.lo[2])+' mm'],
+    ['尺寸',`${Math.round(p.dx)} × ${Math.round(p.dy)} × ${Math.round(p.dz)}`],
+    /* 标高：世界坐标的 Z（零点就是模型的零点），这根木料最高的那一点、最低的那一点 ——
+       横的、竖的、斜的都这么算。顶标高写在上面、底标高写在下面（和木料本身一个上下） */
     ['顶标高',Math.round(P0.tr[2]+bx.hi[2])+' mm'],
+    ['底标高',Math.round(P0.tr[2]+bx.lo[2])+' mm'],
   ];
   const body=document.getElementById('infoBody');
   body.innerHTML='<h1>'+D.kinds[p.ki]+'</h1><table>'+
@@ -899,11 +941,25 @@ const PIDX=new Map(D.panels.map((P0,i)=>[P0.n,i]));
 const PMAP=new Map(); pieces.forEach(p=>PMAP.set(p.pi+':'+p.mi,p));
 /* 每块板的爆炸方向 —— 与上面逐顶点写进 aExp 的是同一个算式 */
 const PEXP=D.panels.map(P0=>{const dx=P0.tr[0]-center[0],dy=P0.tr[1]-center[1],L=Math.hypot(dx,dy)||1;return [dx/L,dy/L];});
+/* 每块板的外包盒（板局部坐标，没有木料的板是 null）：一块板就是一片薄盒子 —— 光标落在哪块板上，照它算 */
+const PBOX=(()=>{const B=D.panels.map(()=>({lo:[1e18,1e18,1e18],hi:[-1e18,-1e18,-1e18]}));
+  pieces.forEach(p=>{const b=boxOf(p), q=B[p.pi];
+    for(let k=0;k<3;k++){q.lo[k]=Math.min(q.lo[k],b.lo[k]);q.hi[k]=Math.max(q.hi[k],b.hi[k])}});
+  return B.map(q=>q.lo[0]>q.hi[0]?null:q)})();
 /* 每块板的中心（板局部坐标）：自动摆尺寸线时，线放在背着它的那一侧 */
-const PCEN=(()=>{const lo=D.panels.map(()=>[1e18,1e18,1e18]), hi=D.panels.map(()=>[-1e18,-1e18,-1e18]);
-  pieces.forEach(p=>{const b=boxOf(p);
-    for(let k=0;k<3;k++){lo[p.pi][k]=Math.min(lo[p.pi][k],b.lo[k]);hi[p.pi][k]=Math.max(hi[p.pi][k],b.hi[k])}});
-  return lo.map((l,i)=>l[0]>hi[i][0]?[0,0,0]:[0,1,2].map(k=>(l[k]+hi[i][k])/2))})();
+const PCEN=PBOX.map(q=>q?[0,1,2].map(k=>(q.lo[k]+q.hi[k])/2):[0,0,0]);
+/* 每块板里有哪几种木料：板现在显没显示（楼层没关、至少有一种木料没关） */
+const PKIN=D.panels.map(()=>new Set()); pieces.forEach(p=>PKIN[p.pi].add(p.ki));
+function panelShown(pi){if(!showLv.has(D.panels[pi].lv)) return false;
+  for(const k of PKIN[pi]) if(showKd.has(k)) return true; return false}
+/* 视线 ray 从哪儿进到第 pi 块板的外包盒里（视线上的距离；不穿过就是 null）。剖切面以上的那一截不算 */
+function boxT(pi,ray){const b=PBOX[pi]; if(!b) return null;
+  const o=W2L(pi,ray.o), d=D2L(pi,ray.d), zc=clipZ-D.panels[pi].tr[2]; let t0=-1e18, t1=1e18;
+  for(let k=0;k<3;k++){const lo=b.lo[k], hi=k===2?Math.min(b.hi[2],zc):b.hi[k]; if(hi<lo) return null;
+    if(Math.abs(d[k])<1e-9){if(o[k]<lo||o[k]>hi) return null; continue}
+    let a=(lo-o[k])/d[k], c=(hi-o[k])/d[k]; if(a>c){const x=a;a=c;c=x}
+    if(a>t0)t0=a; if(c<t1)t1=c; if(t0>t1) return null}
+  return t1<=1e-6?null:Math.max(t0,0)}
 const expEl=document.getElementById('exp'), clipEl=document.getElementById('clip');
 const ov=document.getElementById('ov'), ox=ov.getContext('2d');
 const tog2=document.getElementById('tog2');
@@ -1414,21 +1470,36 @@ function snip(an){const s=(an.text||'').split('\n')[0].trim();return s.length>18
 /* ---------- 模型上的把手：齿轮（画上去的东西）、i / ×（标注的信息） ---------- */
 /* 用户（2026-11-14）：「测量、开槽现在只是显示一个彩色的点，点一下点开，然后弹出设置选项。这个指示不明显，
    我希望把那个指示的点改成一个好像小齿轮一样的东西，这样看上去就是一个设置选项。」
-   齿轮画成那个东西的颜色，垫一圈反色；选中的（小界面开着的）大一圈、描白边。 */
-function oGear(s,c,on){
-  const x=s[0], y=s[1], R=on?10.5:9, r=R*.7, n=8, path=()=>{ox.beginPath();
-    for(let k=0;k<n*4;k++){const a=(k-.5)/(n*4)*6.2832, q=(k%4<2)?R:r, px=x+Math.cos(a)*q, py=y+Math.sin(a)*q;
-      if(k)ox.lineTo(px,py);else ox.moveTo(px,py)}
+   齿轮画成那个东西的颜色，垫一圈反色；选中的（小界面开着的）大一圈、描白边。
+   用户（同日）：「小齿轮现在是固定大小，我需要它能缩放，跟尺寸线差不多，远了看不见就看不见」。
+   齿轮和尺寸读数一样有实际大小（半径 GEARU 个字单位 ≈ 10 毫米，和读数的字差不多高），近大远小；拉近到
+   读数的字不再变大的时候（半径 9 个像素）它也到头；远到半径不足 GEARMIN 个像素就不画、也点不着。 */
+const GEARU=6.5, GEARMIN=2.2;
+/* 世界点 X 处的齿轮在屏幕上半径多少像素 */
+function gearR(X,on){
+  const s=w2s(X), cb=camBasis(), q=w2s([X[0]+cb.x[0]*100,X[1]+cb.x[1]*100,X[2]+cb.x[2]*100]);
+  return Math.min(UNIT*Math.hypot(q[0]-s[0],q[1]-s[1])/100,CAPPX)*GEARU*(on?1.17:1)}
+/* 画一个半径 R 的齿轮；太小不画，返回 false */
+function oGear(s,c,on,R){
+  if(!(R>=GEARMIN)) return false;
+  const x=s[0], y=s[1], r=R*.7, n=8, k=Math.min(1,R/9), path=()=>{ox.beginPath();
+    for(let j=0;j<n*4;j++){const a=(j-.5)/(n*4)*6.2832, q=(j%4<2)?R:r, px=x+Math.cos(a)*q, py=y+Math.sin(a)*q;
+      if(j)ox.lineTo(px,py);else ox.moveTo(px,py)}
     ox.closePath()};
   ox.lineJoin='round';ox.setLineDash([]);
-  path();ox.strokeStyle=on?'#fff':halo(c);ox.lineWidth=on?3.4:2.6;ox.stroke();
+  path();ox.strokeStyle=on?'#fff':halo(c);ox.lineWidth=(on?3.4:2.6)*k;ox.stroke();
   path();ox.fillStyle=c;ox.fill();
   ox.beginPath();ox.arc(x,y,R*.33,0,6.2832);ox.fillStyle=on?'#fff':halo(c);ox.fill();
+  return true;
 }
-/* 尺寸的齿轮：挂在尺寸线起头那一端的外面一点 */
-function dimGear(A0,B0,i,an){
-  const dx=B0[0]-A0[0], dy=B0[1]-A0[1], L=Math.hypot(dx,dy)||1, on=i===sel, gx=A0[0]-dx/L*18, gy=A0[1]-dy/L*18;
-  oGear([gx,gy],an.color,on);hits.push({x:gx,y:gy,r:on?12:11,i});
+/* 在屏幕点 s 画第 i 条的齿轮（X 是它在模型上的位置，大小照那里算），画出来了才点得着 */
+function gearAt(s,X,i,an){const on=i===sel, R=gearR(X,on);
+  if(oGear(s,an.color,on,R)) hits.push({x:s[0],y:s[1],r:Math.max(R+2,6),i,gear:1});
+  return R}
+/* 尺寸的齿轮：挂在尺寸线起头那一端的外面一点（X：那一端在模型上的位置） */
+function dimGear(A0,B0,i,an,X){
+  const dx=B0[0]-A0[0], dy=B0[1]-A0[1], L=Math.hypot(dx,dy)||1, R=gearR(X,i===sel);
+  gearAt([A0[0]-dx/L*R*2,A0[1]-dy/L*R*2],X,i,an);
 }
 /* 用户：「关于那些标记，就是 12345，我希望它旁边能多一个像 Information 的那个 i，给人一种点开能够查看信息
    的感觉。点开之后那个 i 就会变成一个叉，你就可以把它擦掉，擦掉就是隐藏，然后再点那个 i，它又可以打开。
@@ -1564,7 +1635,7 @@ function drawDimP(an,i,g){
   if(T.some(s=>s[2]<=0)||SM.some(s=>s[2]<=0)||S.some(s=>s[2]<=0)) return;
   const on=i>=0&&i===sel, c=an.color, n=T.length, o=g.ord, A0=S[o[0]], B0=S[o[n-1]];
   const Lp=Math.hypot(B0[0]-A0[0],B0[1]-A0[1]);
-  if(Lp<1){oDot(A0,c,3.5);if(i>=0)dimGear(A0,[A0[0]+1,A0[1]],i,an);return}     // 正对着尺寸线看：只剩一个点
+  if(Lp<1){oDot(A0,c,3.5);if(i>=0)dimGear(A0,[A0[0]+1,A0[1]],i,an,g.N[o[0]]);return}     // 正对着尺寸线看：只剩一个点
   /* 面里的两个方向：u 量的方向；wo 拉出去的那一侧（没拉出也有朝向，读数写在那一侧） */
   const wo=an.off<0?g.w.map(x=>-x):g.w, p0=planeAt(g.N[o[0]],g.u,wo,UNIT,true),
         pl=orthoOn?X=>({s:w2s(X),e1:p0.e1,e2:p0.e2}):X=>planeAt(X,g.u,wo,UNIT,true),
@@ -1596,7 +1667,7 @@ function drawDimP(an,i,g){
     oNumP(go(p,0,rs*13),p.e1,p.e2,fmtD(g.val[kb]-g.val[ka]),c)}
   if(abs) o.forEach(k=>oNumP(go(K[k],-11,6+tw[k]/2),K[k].e2,[-K[k].e1[0],-K[k].e1[1]],tx[k],c));
   ox.lineCap='round';
-  if(i>=0) dimGear(A0,B0,i,an);
+  if(i>=0) dimGear(A0,B0,i,an,g.N[o[0]]);
 }
 /* 画一条尺寸：手动放过的画在面里；前几版留下来没放过的，照老办法冲着屏幕自动摆 */
 function drawDim(an,i){
@@ -1609,7 +1680,7 @@ function drawDimS(an,i){
   const T=g.P.map(w2s), SM=g.M.map(w2s); if(T.some(s=>s[2]<=0)||SM.some(s=>s[2]<=0)) return;
   const on=i>=0&&i===sel, c=an.color, n=T.length, o=g.ord, a3=SM[o[0]], b3=SM[o[n-1]];
   let ux=b3[0]-a3[0], uy=b3[1]-a3[1]; const L=Math.hypot(ux,uy);
-  if(L<1){oDot(a3,c,3.5);if(i>=0)dimGear(a3,[a3[0]+1,a3[1]],i,an);return}     // 正对着尺寸线看：只剩一个点
+  if(L<1){oDot(a3,c,3.5);if(i>=0)dimGear(a3,[a3[0]+1,a3[1]],i,an,g.M[o[0]]);return}     // 正对着尺寸线看：只剩一个点
   ux/=L;uy/=L;
   /* (nx,ny) 尺寸线在屏幕上的法向，朝外；(ex,ey) 引出线的方向；S 各点在尺寸线上的位置 */
   let nx=-uy, ny=ux, ex, ey, S;
@@ -1660,7 +1731,7 @@ function drawDimS(an,i){
       keep.push(j)}
     keep.forEach(j=>{const k=o[j], s=S[k], r=6+tw[k]/2;
       oNum(s[0]+ex*r-ux*11,s[1]+ey*r-uy*11,tx[k],Math.atan2(ey,ex),c)})}
-  if(i>=0) dimGear(A0,B0,i,an);
+  if(i>=0) dimGear(A0,B0,i,an,(an.ov?g.N:g.M)[o[0]]);
 }
 /* 鼠标会吸到哪里：形状 = 吸到了什么（方框 顶点 / 三角 中点 / 圆圈 圆心 / ⊥ 垂足 /
    叉 边线上 / 十字 面上） */
@@ -1756,14 +1827,14 @@ function drawOv(){
       return}
     /* 高亮、槽口、开洞：不编号、不写说明。把手是一个小齿轮（看着就是「设置」），点它弹出小界面（选中的大一圈、
        描白边）；槽口、开洞的那一块本身也能点。槽口的齿轮放在槽的一条边上（槽中间要写字）；开洞的往右上
-       挪开一点，不盖住洞 */
+       挪开一点，不盖住洞。齿轮有实际大小，跟着缩放（见 gearR），远了不画 */
     const nt=an.type==='notch'; let s0=s;
     if(nt){const q=an.pt.slice(); q[an.g.wa]=an.box[an.g.wa+3]; const e=w2s(L2W(pi,q)); if(e[2]>0) s0=e}
     if(an.box){const b=an.box, q=[0,1,2,3,4,5,6,7].map(k=>w2s(L2W(pi,[b[k&1?3:0],b[k&2?4:1],b[k&4?5:2]])));
       if(q.every(z=>z[2]>0)) hits.push({poly:hull2(q),i})}
-    const gp=an.type==='hole'?[s[0]+14,s[1]-14]:s0;
-    if(an.type==='hole') oLine2(s,gp,an.color,1.2);
-    oGear(gp,an.color,on);hits.push({x:gp[0],y:gp[1],r:on?12:11,i});
+    const gR=gearR(wp,on), gk=gR*1.55, gp=an.type==='hole'?[s[0]+gk,s[1]-gk]:s0;
+    if(an.type==='hole'&&gR>=GEARMIN) oLine2(s,gp,an.color,Math.min(1.2,gR/7));
+    gearAt(gp,wp,i,an);
     /* 槽口：长度和深度直接写在槽上，贴着开槽的那个面、顺着槽的长向（宽度不写）。字的大小跟着槽走：
        整块正好落在槽口里（宽占六成、长不超过九成），槽远了字小、近了字大，比例不变 */
     if(nt){const g=an.g, b=an.box, t='长 '+fmtD(g.L)+'  深 '+fmtD(g.Dp);
@@ -1787,7 +1858,14 @@ function drawOv(){
   });
   ox.globalAlpha=1;
   if(tool) drawTool();
+  if(gest&&gest.orb&&gest.pv){const s=w2s(gest.pv.P); if(s[2]>0) oPivot(s)}
   popPlace();                                   // 小界面跟着它说的那个东西走
+}
+/* 正在转：转的中心画一个小圈，松手就没了 —— 看得见它绕着哪一点转。那一点在屏幕上不动 */
+function oPivot(s){
+  ox.setLineDash([]);ox.beginPath();ox.arc(s[0],s[1],6.5,0,6.2832);
+  ox.strokeStyle='rgba(0,0,0,.6)';ox.lineWidth=3.6;ox.stroke();ox.strokeStyle='#fff';ox.lineWidth=1.6;ox.stroke();
+  ox.beginPath();ox.arc(s[0],s[1],1.8,0,6.2832);ox.fillStyle='#fff';ox.fill();
 }
 /* 点中了什么（没有就是 null）：先看编号、齿轮、i / ×、信息框和框里的网址 / 文件（后画的在上面），再看槽口 /
    开洞的那一块，都没点中再看尺寸线 —— 线长，不然容易盖住别的。
