@@ -462,17 +462,29 @@ function eye(){
           center[1]+pan[1]+dist*cp*Math.sin(yaw),
           center[2]+pan[2]+dist*sp];
 }
+/* 模型在镜头前后占多深 —— dc：模型包围球的球心顺着视线离镜头多远（负的 = 在镜头后面），R：球的半径
+   （爆炸开了跟着放大，再留一点余量）。远近裁剪面、正交下视线的起点都照它定。
+   球心是模型的中心，不是镜头盯着的那一点：镜头绕着光标转、朝着光标缩放以后，盯着的那一点常常离模型
+   中心一两个半径远。早先裁剪面照「盯着的那一点前后各 1.6 个半径」定，那时模型的一头就落到裁剪面外面，
+   被斜着切掉一块 —— 用户看到的「特定视角产生破面」。 */
+function depthSpan(){
+  const cp=Math.cos(pitch), f=[-cp*Math.cos(yaw),-cp*Math.sin(yaw),-Math.sin(pitch)];       // 视线方向
+  return {dc:dist-(pan[0]*f[0]+pan[1]*f[1]+pan[2]*f[2]), R:radius*1.03+expK*1.5+50};
+}
 function draw(pick){
   const w=cv.width,h=cv.height;
   gl.viewport(0,0,w,h);
   gl.enable(gl.DEPTH_TEST); gl.enable(gl.CULL_FACE); gl.cullFace(gl.BACK);
   gl.clearColor(0.07,0.063,0.047,1); gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
   const e=eye(), c=[center[0]+pan[0],center[1]+pan[1],center[2]+pan[2]];
-  /* 远近裁剪面贴着模型包围球走：深度缓冲的精度全花在有几何的地方。
-     正交投影允许负的近平面 —— 裁剪槽直接包住整个模型，镜头贴得再近
-     也不会切出破面；透视的近平面必须为正，随距离缩小。 */
-  const zf=dist+radius*1.6;
-  const zn=orthoOn?(dist-radius*1.6):Math.max(radius*0.002,dist*0.03);
+  /* 远近裁剪面贴着模型包围球走（见 depthSpan）：深度缓冲的精度全花在有几何的地方。
+     正交投影允许负的近平面 —— 裁剪槽直接包住整个模型，镜头贴得再近、转到哪个角度都不会切出破面；
+     透视的近平面必须为正：镜头在球外面就贴着球的近端，钻进球里了就取一个小的正数（随距离缩小，
+     但不超过半径的 2%，不然离得远的时候会把眼前的木料切掉）。 */
+  const sp=depthSpan();
+  const zn=orthoOn?sp.dc-sp.R
+    :(sp.dc-sp.R>radius*0.002?sp.dc-sp.R:Math.max(radius*0.002,Math.min(dist*0.03,radius*0.02)));
+  const zf=orthoOn?sp.dc+sp.R:Math.max(sp.dc+sp.R,zn*2);
   const proj=orthoOn?orthoM(dist*Math.tan(0.36),w/h,zn,zf)
                     :persp(0.72,w/h,zn,zf);
   const mvp=mul(proj,lookAt(e,c,[0,0,1]));
@@ -925,8 +937,8 @@ function rayAt(cx,cy){
   const r=cv.getBoundingClientRect(), sx=(cx-r.left)/r.width*2-1, sy=1-(cy-r.top)/r.height*2;
   const b=camBasis(), asp=r.width/r.height, t=Math.tan(0.36);
   if(orthoOn){
-    /* 正交的近平面可以在镜头后面：把起点往后退够远，镜头后面看得见的木料也打得到 */
-    const hh=dist*t, hw=hh*asp, k=dist+radius*4;
+    /* 正交的近平面可以在镜头后面：把起点退到整个模型的后面，镜头后面看得见的木料也打得到 */
+    const hh=dist*t, hw=hh*asp, sp=depthSpan(), k=Math.max(0,sp.R-sp.dc)+radius*0.1;
     return {o:[0,1,2].map(i=>b.e[i]+b.x[i]*sx*hw+b.y[i]*sy*hh+b.z[i]*k), d:[-b.z[0],-b.z[1],-b.z[2]]};
   }
   return {o:b.e, d:V.norm([0,1,2].map(i=>-b.z[i]+b.x[i]*sx*t*asp+b.y[i]*sy*t))};
