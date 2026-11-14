@@ -142,6 +142,11 @@ button.del{color:var(--bad)}
 button.inl{flex:none;min-width:0;padding:2px 8px;margin-left:6px}
 button:disabled,input:disabled{opacity:.5;cursor:default}
 #tog2{display:none}
+/* 标注信息的总开关：单独浮在屏幕上（电脑上在右边那一列的左边，手机上在左上第三个）。亮着 = 有信息开着 */
+#togI{top:12px;right:316px;z-index:3;display:flex;align-items:center;gap:6px;height:34px;min-width:0;flex:none;
+  padding:0 11px;font-size:12px;color:var(--dim)}
+#togI.on{background:color-mix(in srgb,var(--panel) 92%,transparent);color:var(--acc);border-color:var(--acc)}   /* 亮着：描金边、金字，不整块涂黄 */
+#togI[hidden]{display:none}
 #tog2n{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;
   background:var(--acc);color:#1a1509;font-size:10px;font-weight:700;line-height:18px;text-align:center}
 #cap .capH{display:flex;align-items:center;gap:8px}
@@ -186,6 +191,8 @@ body.side-open #tog .i-x{display:inline}
   #infoBody{max-height:calc(100vh - 48px);max-height:calc(100dvh - 48px)}
   #tog2{display:flex;align-items:center;justify-content:center;top:12px;left:64px;z-index:3;
     width:44px;height:44px;min-width:0;flex:none;padding:0}
+  #togI{left:116px;right:auto;width:44px;height:44px;padding:0;justify-content:center}
+  #togIt{display:none}
   #ann{display:none;top:64px;left:12px;width:min(320px,calc(100vw - 24px));
     max-height:calc(100vh - 76px);max-height:calc(100dvh - 76px);z-index:2}
   body.ann-open #ann{display:flex}
@@ -220,6 +227,7 @@ body.side-open #tog .i-x{display:inline}
 
 <button class="pane" id="tog" type="button" aria-label="显示/隐藏侧栏" aria-controls="side" aria-expanded="false"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path class="i-menu" d="M4 7h16M4 12h16M4 17h16"/><path class="i-x" d="M6 6l12 12M18 6L6 18"/></svg></button>
 <button class="pane" id="tog2" type="button" aria-label="显示/隐藏标注" aria-controls="ann" aria-expanded="false"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 21V4M6 4h11l-2.5 4 2.5 4H6"/></svg><span id="tog2n" hidden></span></button>
+<button class="pane" id="togI" type="button" hidden><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="7.5" r=".7" fill="currentColor"/></svg><span id="togIt"></span></button>
 
 <div class="pane" id="side">
   <h1>6083C</h1>
@@ -1403,6 +1411,100 @@ function oText(x,y,s,i,rt){
   ox.fillStyle='#ece7dc';ox.textAlign='left';ox.textBaseline='middle';ox.fillText(s,x+7,y+.5);
   if(i!=null)hits.push({x,y:t,w,h,i})}
 function snip(an){const s=(an.text||'').split('\n')[0].trim();return s.length>18?s.slice(0,17)+'…':s}
+/* ---------- 模型上的把手：齿轮（画上去的东西）、i / ×（标注的信息） ---------- */
+/* 用户（2026-11-14）：「测量、开槽现在只是显示一个彩色的点，点一下点开，然后弹出设置选项。这个指示不明显，
+   我希望把那个指示的点改成一个好像小齿轮一样的东西，这样看上去就是一个设置选项。」
+   齿轮画成那个东西的颜色，垫一圈反色；选中的（小界面开着的）大一圈、描白边。 */
+function oGear(s,c,on){
+  const x=s[0], y=s[1], R=on?10.5:9, r=R*.7, n=8, path=()=>{ox.beginPath();
+    for(let k=0;k<n*4;k++){const a=(k-.5)/(n*4)*6.2832, q=(k%4<2)?R:r, px=x+Math.cos(a)*q, py=y+Math.sin(a)*q;
+      if(k)ox.lineTo(px,py);else ox.moveTo(px,py)}
+    ox.closePath()};
+  ox.lineJoin='round';ox.setLineDash([]);
+  path();ox.strokeStyle=on?'#fff':halo(c);ox.lineWidth=on?3.4:2.6;ox.stroke();
+  path();ox.fillStyle=c;ox.fill();
+  ox.beginPath();ox.arc(x,y,R*.33,0,6.2832);ox.fillStyle=on?'#fff':halo(c);ox.fill();
+}
+/* 尺寸的齿轮：挂在尺寸线起头那一端的外面一点 */
+function dimGear(A0,B0,i,an){
+  const dx=B0[0]-A0[0], dy=B0[1]-A0[1], L=Math.hypot(dx,dy)||1, on=i===sel, gx=A0[0]-dx/L*18, gy=A0[1]-dy/L*18;
+  oGear([gx,gy],an.color,on);hits.push({x:gx,y:gy,r:on?12:11,i});
+}
+/* 用户：「关于那些标记，就是 12345，我希望它旁边能多一个像 Information 的那个 i，给人一种点开能够查看信息
+   的感觉。点开之后那个 i 就会变成一个叉，你就可以把它擦掉，擦掉就是隐藏，然后再点那个 i，它又可以打开。
+   所有的这些标记默认是打开的、显示的。同时有个总开关可以单独放在屏幕上，一键展开所有的 Information，
+   或者关闭所有的。」
+   每条标注的信息开没开：默认都开着。只是这次看图时的显示状态 —— 不存进文件、不进撤销。 */
+const infoOff=new Set();
+function infoOpen(an){return !infoOff.has(an.id)}
+function infoToggle(an){if(infoOff.has(an.id))infoOff.delete(an.id);else infoOff.add(an.id);infoBtn();draw(false)}
+/* 总开关：有开着的就全收起，全收着就全打开 */
+function infoAll(){const N=A.filter(isNote);
+  if(N.some(infoOpen)) N.forEach(a=>infoOff.add(a.id)); else infoOff.clear();
+  infoBtn();draw(false)}
+/* 总开关的样子：有开着的 = 亮着（点它全收），全收着 = 灭的（点它全开）。一条标注都没有就不显示 */
+function infoBtn(){
+  const b=document.getElementById('togI'), N=A.filter(isNote), any=N.some(infoOpen), t=any?'收起全部信息':'展开全部信息';
+  b.hidden=!N.length;b.classList.toggle('on',any);b.setAttribute('aria-pressed',any?'true':'false');
+  b.title=t;b.setAttribute('aria-label',t);document.getElementById('togIt').textContent=t;
+}
+/* 编号旁边的小圆钮：i = 信息收着，点它打开；× = 信息开着，点它收起 */
+function oInfo(x,y,open){
+  ox.setLineDash([]);
+  ox.beginPath();ox.arc(x,y,8.5,0,6.2832);ox.fillStyle='rgba(20,17,11,.9)';ox.fill();
+  ox.lineWidth=1.3;ox.strokeStyle='#ece7dc';ox.stroke();
+  ox.lineCap='round';ox.strokeStyle='#ece7dc';
+  if(open){ox.beginPath();ox.moveTo(x-3.2,y-3.2);ox.lineTo(x+3.2,y+3.2);ox.moveTo(x+3.2,y-3.2);ox.lineTo(x-3.2,y+3.2);
+    ox.lineWidth=1.7;ox.stroke()}
+  else{ox.beginPath();ox.arc(x,y-4,1.25,0,6.2832);ox.fillStyle='#ece7dc';ox.fill();
+    ox.beginPath();ox.moveTo(x,y-1.2);ox.lineTo(x,y+4.4);ox.lineWidth=2;ox.stroke()}
+}
+/* 一条标注的信息排成几行，每行是几段（t 字；带 u 的是网址，带 m 的是文件 —— 这两样能点）。
+   文字标注：它的字，照宽度折行，网址单独成段；文件标注：一个文件一行。最多 IL 行，多了末尾打省略号。
+   排好的存着（每画一帧都要用），字 / 文件没变就不重排 */
+const INFO=new Map(), IW=236, IL=8;
+function infoLines(an){
+  const key=an.type==='note'?'t'+an.text:'f'+an.media.map(m=>m.n||'').join('|'), c=INFO.get(an.id);
+  if(c&&c.key===key) return c;
+  ox.font=DFONT;
+  const cw=s=>ox.measureText(s).width, lines=[]; let more=false;
+  if(an.type==='note'){
+    const paras=an.text.replace(/\s+$/,'').split('\n');
+    paras.forEach((para,pk)=>{ if(more) return; if(lines.length>=IL){more=true;return}
+      let line=[], lw=0;
+      for(const p of linkParts(para)) for(const ch of p.t){ const x=cw(ch);
+        if(lw+x>IW&&line.length){lines.push(line);line=[];lw=0; if(lines.length>=IL){more=true;break}}
+        const last=line[line.length-1];
+        if(last&&last.u===p.u) last.t+=ch; else line.push({t:ch,u:p.u});
+        lw+=x}
+      if(!more) lines.push(line)});
+    if(!an.text.trim()) lines.splice(0,lines.length,[{t:'（还没写字）'}]);
+  }else{
+    an.media.slice(0,IL).forEach(m=>{let s=m.n||'未命名'; while(s.length>4&&cw(s)>IW) s=s.slice(0,-2)+'…'; lines.push([{t:s,m}])});
+    if(an.media.length>IL) lines[IL-1]=[{t:'…… 还有 '+(an.media.length-IL+1)+' 个'}];
+    if(!an.media.length) lines.push([{t:'（还没有文件）'}]);
+  }
+  if(more){const ln=lines[lines.length-1], sg=ln[ln.length-1]; if(sg) sg.t+='…'; else ln.push({t:'…'})}
+  const w=Math.max.apply(null,lines.map(ln=>ln.reduce((a,sg)=>a+cw(sg.t),0)).concat([10]));
+  const r={key,lines,w};INFO.set(an.id,r);return r;
+}
+/* 画一条标注的信息框（左上角在 x,y）：深底、圆角。网址和文件名用强调色、加下划线，点了就打开；
+   点框里别的地方 = 选中这条标注 */
+function oInfoBox(x,y,an,i){
+  const L=infoLines(an), LH=17, PX=8, PY=5, n=L.lines.length, w=L.w+PX*2, h=n*LH+PY*2, r=Math.min(9,h/2);
+  ox.setLineDash([]);
+  ox.beginPath();ox.moveTo(x+r,y);ox.arcTo(x+w,y,x+w,y+h,r);ox.arcTo(x+w,y+h,x,y+h,r);
+  ox.arcTo(x,y+h,x,y,r);ox.arcTo(x,y,x+w,y,r);ox.closePath();
+  ox.fillStyle='rgba(20,17,11,.88)';ox.fill();
+  hits.push({x,y,w,h,i});
+  ox.font=DFONT;ox.textAlign='left';ox.textBaseline='middle';
+  L.lines.forEach((ln,k)=>{let tx=x+PX; const ty=y+PY+LH*k+LH/2;
+    ln.forEach(sg=>{const sw=ox.measureText(sg.t).width, act=sg.u||sg.m;
+      ox.fillStyle=act?'#e6b455':'#ece7dc';ox.fillText(sg.t,tx,ty+.5);
+      if(act){ox.beginPath();ox.moveTo(tx,ty+7.5);ox.lineTo(tx+sw,ty+7.5);ox.lineWidth=1;ox.strokeStyle='#e6b455';ox.stroke();
+        hits.push(sg.u?{x:tx,y:ty-LH/2,w:sw,h:LH,i,url:sg.u}:{x:tx,y:ty-LH/2,w:sw,h:LH,i,med:sg.m})}
+      tx+=sw})});
+}
 /* 画一条尺寸。i<0 是放置过程中的预览：不画序号、不能点。
    照工程图的画法：尺寸线离开测点一段、引出线连过去；相对读数顺着尺寸线，写在尺寸线和
    测点之间那条空带里；绝对读数垂直于尺寸线，贴着引出线伸出去的那一头；每个读数垫一块底。
@@ -1462,7 +1564,7 @@ function drawDimP(an,i,g){
   if(T.some(s=>s[2]<=0)||SM.some(s=>s[2]<=0)||S.some(s=>s[2]<=0)) return;
   const on=i>=0&&i===sel, c=an.color, n=T.length, o=g.ord, A0=S[o[0]], B0=S[o[n-1]];
   const Lp=Math.hypot(B0[0]-A0[0],B0[1]-A0[1]);
-  if(Lp<1){oDot(A0,c,3.5);if(i>=0)hits.push({x:A0[0],y:A0[1],r:7,i});return}     // 正对着尺寸线看：只剩一个点
+  if(Lp<1){oDot(A0,c,3.5);if(i>=0)dimGear(A0,[A0[0]+1,A0[1]],i,an);return}     // 正对着尺寸线看：只剩一个点
   /* 面里的两个方向：u 量的方向；wo 拉出去的那一侧（没拉出也有朝向，读数写在那一侧） */
   const wo=an.off<0?g.w.map(x=>-x):g.w, p0=planeAt(g.N[o[0]],g.u,wo,UNIT,true),
         pl=orthoOn?X=>({s:w2s(X),e1:p0.e1,e2:p0.e2}):X=>planeAt(X,g.u,wo,UNIT,true),
@@ -1494,6 +1596,7 @@ function drawDimP(an,i,g){
     oNumP(go(p,0,rs*13),p.e1,p.e2,fmtD(g.val[kb]-g.val[ka]),c)}
   if(abs) o.forEach(k=>oNumP(go(K[k],-11,6+tw[k]/2),K[k].e2,[-K[k].e1[0],-K[k].e1[1]],tx[k],c));
   ox.lineCap='round';
+  if(i>=0) dimGear(A0,B0,i,an);
 }
 /* 画一条尺寸：手动放过的画在面里；前几版留下来没放过的，照老办法冲着屏幕自动摆 */
 function drawDim(an,i){
@@ -1506,7 +1609,7 @@ function drawDimS(an,i){
   const T=g.P.map(w2s), SM=g.M.map(w2s); if(T.some(s=>s[2]<=0)||SM.some(s=>s[2]<=0)) return;
   const on=i>=0&&i===sel, c=an.color, n=T.length, o=g.ord, a3=SM[o[0]], b3=SM[o[n-1]];
   let ux=b3[0]-a3[0], uy=b3[1]-a3[1]; const L=Math.hypot(ux,uy);
-  if(L<1){oDot(a3,c,3.5);if(i>=0)hits.push({x:a3[0],y:a3[1],r:7,i});return}     // 正对着尺寸线看：只剩一个点
+  if(L<1){oDot(a3,c,3.5);if(i>=0)dimGear(a3,[a3[0]+1,a3[1]],i,an);return}     // 正对着尺寸线看：只剩一个点
   ux/=L;uy/=L;
   /* (nx,ny) 尺寸线在屏幕上的法向，朝外；(ex,ey) 引出线的方向；S 各点在尺寸线上的位置 */
   let nx=-uy, ny=ux, ex, ey, S;
@@ -1557,6 +1660,7 @@ function drawDimS(an,i){
       keep.push(j)}
     keep.forEach(j=>{const k=o[j], s=S[k], r=6+tw[k]/2;
       oNum(s[0]+ex*r-ux*11,s[1]+ey*r-uy*11,tx[k],Math.atan2(ey,ex),c)})}
+  if(i>=0) dimGear(A0,B0,i,an);
 }
 /* 鼠标会吸到哪里：形状 = 吸到了什么（方框 顶点 / 三角 中点 / 圆圈 圆心 / ⊥ 垂足 /
    叉 边线上 / 十字 面上） */
@@ -1642,20 +1746,24 @@ function drawOv(){
     const pi=PIDX.get(an.pn), wp=L2W(pi,an.pt); if(wp[2]>clipZ) return;
     const s=w2s(wp); if(s[2]<=0) return;
     if(isNote(an)){
-      /* 标注（文字 / 文件）：准确位置一个小点，编号往右上引出，不挡住要看的地方。文字标注把字写在编号旁边；
-         文件标注选中了才写文件名 */
-      const bx=s[0]+14, by=s[1]-14, t=an.type==='note'?snip(an):(on?fileLabel(an):'');
+      /* 标注（文字 / 文件）：准确位置一个小点，编号往右上引出，不挡住要看的地方。编号右边一个小圆钮：
+         × = 信息开着（文字标注的字 / 文件标注的文件名写在它右边的框里），点它收起；收起以后是 i，点它再打开 */
+      const bx=s[0]+14, by=s[1]-14, r=on?12:10, ix=bx+r+11, op=infoOpen(an);
       oLine2(s,[bx,by],an.color,1.6);oDot(s,an.color);
-      if(t) oText(bx+7,by,t,i);
+      if(op) oInfoBox(ix+13,by-13.5,an,i);
       oBadge(bx,by,i,an);
+      oInfo(ix,by,op);hits.push({x:ix,y:by,r:9,i,info:1});
       return}
-    /* 高亮、槽口、开洞：不编号、不写说明。准确位置留一个小圆点，点它就选中这一个（选中的大一圈、描白边）；
-       槽口、开洞的那一块本身也能点。槽口的圆点放在槽的一条边上：槽中间要写字 */
+    /* 高亮、槽口、开洞：不编号、不写说明。把手是一个小齿轮（看着就是「设置」），点它弹出小界面（选中的大一圈、
+       描白边）；槽口、开洞的那一块本身也能点。槽口的齿轮放在槽的一条边上（槽中间要写字）；开洞的往右上
+       挪开一点，不盖住洞 */
     const nt=an.type==='notch'; let s0=s;
     if(nt){const q=an.pt.slice(); q[an.g.wa]=an.box[an.g.wa+3]; const e=w2s(L2W(pi,q)); if(e[2]>0) s0=e}
     if(an.box){const b=an.box, q=[0,1,2,3,4,5,6,7].map(k=>w2s(L2W(pi,[b[k&1?3:0],b[k&2?4:1],b[k&4?5:2]])));
       if(q.every(z=>z[2]>0)) hits.push({poly:hull2(q),i})}
-    oDot(s0,an.color,on?5.5:3.5,on?'#fff':null);hits.push({x:s0[0],y:s0[1],r:on?9:7,i});
+    const gp=an.type==='hole'?[s[0]+14,s[1]-14]:s0;
+    if(an.type==='hole') oLine2(s,gp,an.color,1.2);
+    oGear(gp,an.color,on);hits.push({x:gp[0],y:gp[1],r:on?12:11,i});
     /* 槽口：长度和深度直接写在槽上，贴着开槽的那个面、顺着槽的长向（宽度不写）。字的大小跟着槽走：
        整块正好落在槽口里（宽占六成、长不超过九成），槽远了字小、近了字大，比例不变 */
     if(nt){const g=an.g, b=an.box, t='长 '+fmtD(g.L)+'  深 '+fmtD(g.Dp);
@@ -1681,16 +1789,18 @@ function drawOv(){
   if(tool) drawTool();
   popPlace();                                   // 小界面跟着它说的那个东西走
 }
-/* 点中了哪一条（没有就是 -1）：先看编号、文字、小圆点，再看槽口 / 开洞的那一块，都没点中再看尺寸线 ——
-   线长，不然容易盖住别的 */
-function hitBadge(cx,cy,touch){const s=touch?8:2;
+/* 点中了什么（没有就是 null）：先看编号、齿轮、i / ×、信息框和框里的网址 / 文件（后画的在上面），再看槽口 /
+   开洞的那一块，都没点中再看尺寸线 —— 线长，不然容易盖住别的。
+   返回的那一项：i 是哪一条；带 info 的是 i / × 小圆钮，带 url 的是网址，带 med 的是文件 */
+function hitAt(cx,cy,touch){const s=touch?8:2;
   for(let k=hits.length-1;k>=0;k--){const h=hits[k]; if(h.x1!=null||h.poly) continue;
-    if(h.w?(cx>=h.x-s&&cx<=h.x+h.w+s&&cy>=h.y-s&&cy<=h.y+h.h+s):Math.hypot(cx-h.x,cy-h.y)<=h.r+s) return h.i}
-  for(let k=hits.length-1;k>=0;k--){const h=hits[k]; if(h.poly&&inPoly2(h.poly,cx,cy)) return h.i}
+    if(h.w!=null?(cx>=h.x-s&&cx<=h.x+h.w+s&&cy>=h.y-s&&cy<=h.y+h.h+s):Math.hypot(cx-h.x,cy-h.y)<=h.r+s) return h}
+  for(let k=hits.length-1;k>=0;k--){const h=hits[k]; if(h.poly&&inPoly2(h.poly,cx,cy)) return h}
   for(let k=hits.length-1;k>=0;k--){const h=hits[k]; if(h.x1==null) continue;
     const dx=h.x2-h.x1, dy=h.y2-h.y1, t=Math.max(0,Math.min(1,((cx-h.x1)*dx+(cy-h.y1)*dy)/(dx*dx+dy*dy||1)));
-    if(Math.hypot(cx-h.x1-dx*t,cy-h.y1-dy*t)<=4+s) return h.i}
-  return -1}
+    if(Math.hypot(cx-h.x1-dx*t,cy-h.y1-dy*t)<=4+s) return h}
+  return null}
+function hitBadge(cx,cy,touch){const h=hitAt(cx,cy,touch);return h?h.i:-1}
 
 /* ---------- 视角：记下 / 回到 ---------- */
 /* 每条标注记着做它时的画面：镜头、投影、爆炸、剖切、隐藏了哪些楼层和构件类型。
@@ -2322,7 +2432,11 @@ function toolTap(cx,cy,touch){
 }
 function tapAt(cx,cy,touch){
   if(tool){toolTap(cx,cy,touch);return}
-  const i=hitBadge(cx,cy,touch);
+  const h=hitAt(cx,cy,touch), i=h?h.i:-1;
+  /* 标注旁边的 i / ×：只管它的信息开还是收；信息框里的网址、文件：点了就打开 */
+  if(h&&h.info){if(A[i])infoToggle(A[i]);return}
+  if(h&&h.url){window.open(h.url,'_blank','noopener');return}
+  if(h&&h.med){openMedia(h.med);return}
   /* 点中标注：清单里展开它。点中画上去的东西（测量、高亮、槽口、开洞）：在它旁边弹出小界面 */
   if(i>=0){showInfo(null);popXY=[cx,cy];select(i,false);if(isNote(A[i])&&!NARROW.matches)openAnn();return}
   if(sel>=0&&A[sel]&&!isNote(A[sel])) select(-1);       // 点别处：小界面收起来
@@ -2467,6 +2581,7 @@ function counts(){                       // 只数标注（文字、文件）
   const N=A.filter(isNote), n=N.length, o=N.filter(a=>!a.done).length;
   document.getElementById('annN').textContent=n?(o===n?n+' 条':n+' 条，'+o+' 条没处理'):'';
   const b=document.getElementById('tog2n');b.textContent=n||'';b.hidden=!n;
+  infoBtn();
 }
 
 /* ---------- 列表与编辑 ---------- */
@@ -2773,6 +2888,7 @@ document.getElementById('annHead').onclick=e=>{
   document.getElementById('annHead').setAttribute('aria-expanded',f?'false':'true')};
 document.getElementById('annHead').onkeydown=e=>{
   if(e.target===e.currentTarget&&(e.key==='Enter'||e.key===' ')){e.preventDefault();e.currentTarget.click()}};
+document.getElementById('togI').onclick=infoAll;
 document.getElementById('bUndo').onclick=undo;
 document.getElementById('bRedo').onclick=redo;
 tog2.onclick=()=>{document.body.classList.contains('ann-open')?closeAnn():openAnn()};
