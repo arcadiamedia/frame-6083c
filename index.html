@@ -74,8 +74,16 @@ td:first-child{color:var(--dim);padding-right:8px;white-space:nowrap}
 .anH{display:flex;gap:8px;padding:7px 8px;cursor:pointer;align-items:flex-start}
 .num{flex:none;width:20px;height:20px;border-radius:50%;font-size:11px;font-weight:700;
   display:flex;align-items:center;justify-content:center}
-.num.dotm{width:12px;height:12px;margin:4px;border-radius:3px}
-.anG{margin:10px 2px 6px}
+/* 画上去的东西（测量、高亮、槽口、开洞）的小界面：点中它时浮在它旁边，比别的面板透一些 */
+#pop{z-index:4;width:226px;padding:6px 10px 10px;background:color-mix(in srgb,var(--panel) 74%,transparent)}
+#pop[hidden]{display:none}
+.popH{display:flex;align-items:center;gap:8px}
+.popH b{flex:none;font-size:12px}
+.popH .mini{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.popH button{flex:none;min-width:0;width:26px;height:26px;padding:0;background:transparent;border-color:transparent;
+  color:var(--fg);font-size:17px;line-height:1}
+#pop .anE{padding:0;border-top:0}
+#pop .row{margin-top:8px}
 .anL{display:flex;flex-direction:column;gap:3px;padding:0 8px 8px 36px}
 .anL a,#capX a{color:var(--acc);overflow-wrap:anywhere}
 .anT{min-width:0;flex:1}
@@ -268,6 +276,7 @@ body.side-open #tog .i-x{display:inline}
   <div class="anM" id="capM"></div>
   <div class="row"><button id="capP">上一条</button><span class="mini" id="capI"></span><button id="capNx">下一条</button><button id="capE">编辑</button></div>
 </div>
+<div class="pane" id="pop" hidden></div>
 <div id="lb" hidden><button id="lbX" type="button" aria-label="关闭" title="关闭"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div id="lbC"></div><div id="lbT"></div></div>
 <div id="toast" role="status" aria-live="polite"></div>
 <input type="file" id="fMedia" multiple hidden><input type="file" id="fImp" accept=".json,.html,.htm" hidden>
@@ -1054,8 +1063,6 @@ function hitInfo(p,cx,cy,touch,ref,extra){
 function isNote(an){return an.type==='note'||an.type==='doc'}
 function placed(an){return an.type==='dim'||typeof an.pn==='string'}       // 在模型上有位置
 function numOf(i){let n=0;for(let k=0;k<=i;k++)if(isNote(A[k]))n++;return n}      // 第 i 条是几号标注
-/* 和第 i 条同一类的那些（标注 / 画上去的东西）在 A 里的下标：上一条、下一条在同类里翻 */
-function sameGroup(i){const g=isNote(A[i]);return A.map((a,k)=>isNote(a)===g?k:-1).filter(k=>k>=0)}
 /* 文字里的网址（http / https 开头，或者 www. 开头）：拆成一段一段，带 u 的那几段是链接 */
 const URLRE=/(https?:\/\/[^\s<>"'，。；、）】]+|www\.[^\s<>"'，。；、）】]+)/gi;
 function linkParts(s){const r=[];let k=0;s=String(s||'');
@@ -1129,12 +1136,13 @@ function normMedia(m){
 function norm(o){
   if(!o||typeof o!=='object'||!TYPES.hasOwnProperty(o.type)) return null;
   /* 字只有「文字」标注有，附件只有「文件」标注有（链接不算文件，写在文字里）。测量、高亮、槽口、开洞
-     不带这些 —— 老数据里带着的，normAll 拆成单独的标注 */
+     不带这些 —— 老数据里带着的，normAll 拆成单独的标注；它们也不记视角、没有「已处理」 */
+  const nt=o.type==='note'||o.type==='doc';
   const an={id:String(o.id||nid()),type:o.type,text:o.type==='note'?String(o.text||'').slice(0,4000):'',
-    color:/^#[0-9a-f]{6}$/i.test(o.color)?o.color:COLORS[DEFCOL[o.type]],done:!!o.done,
+    color:/^#[0-9a-f]{6}$/i.test(o.color)?o.color:COLORS[DEFCOL[o.type]],done:nt&&!!o.done,
     t:num(o.t)?o.t:0,
     media:o.type==='doc'?(Array.isArray(o.media)?o.media:[]).map(normMedia).filter(m=>m&&m.k!=='link'):[]};
-  const v=o.view;
+  const v=nt?o.view:null;
   if(v&&num(v.yaw)&&num(v.pitch)&&num(v.dist)&&v.dist>0&&v3(v.t))
     an.view={yaw:v.yaw,pitch:Math.max(-1.5706,Math.min(1.5706,v.pitch)),dist:v.dist,t:v.t.slice(),o:v.o?1:0,
       exp:num(v.exp)?Math.max(0,Math.min(100,v.exp)):0,clip:num(v.clip)?Math.max(0,Math.min(100,v.clip)):100,
@@ -1671,6 +1679,7 @@ function drawOv(){
   });
   ox.globalAlpha=1;
   if(tool) drawTool();
+  popPlace();                                   // 小界面跟着它说的那个东西走
 }
 /* 点中了哪一条（没有就是 -1）：先看编号、文字、小圆点，再看槽口 / 开洞的那一块，都没点中再看尺寸线 ——
    线长，不然容易盖住别的 */
@@ -1761,6 +1770,7 @@ function toolBtns(){document.querySelectorAll('[data-tool]').forEach(b=>
    ed：拿已有的一条尺寸接着做 —— place 为真是重新放它的尺寸线，否则是给连续尺寸接着加点 */
 function startTool(t,ed,place){
   if(tool&&tool.btn===t&&!ed){endTool();return}
+  if(sel>=0&&A[sel]&&!isNote(A[sel])) sel=-1;           // 去用工具：小界面收起来
   const dm=t==='dim1'||t==='dimc';
   tool={type:dm?'dim':t,btn:t,pts:[],keep:0,guide:[],gLock:-1,gS:-1,gBtn:false};
   if(dm){
@@ -1776,7 +1786,7 @@ function startTool(t,ed,place){
   /* 焦点别留在刚点的按钮上：不然取点时按回车会再按一次那个按钮 */
   const ae=document.activeElement; if(ae&&ae!==document.body&&ae.blur) ae.blur();
   hover=null;showInfo(null);cv.style.cursor='crosshair';
-  toolBtns();if(NARROW.matches)closeAnn();hud();cap();undoBtns();draw(false);
+  toolBtns();if(NARROW.matches)closeAnn();hud();cap();renderPop();undoBtns();draw(false);
 }
 function endTool(){tool=null;hover=null;cv.style.cursor='';toolBtns();hud();cap();undoBtns();draw(false)}
 /* 这根木料上标的圆洞：两个口的圆心也能吸。q 圆心，na / s 这个口开在哪根轴的哪一头
@@ -1918,7 +1928,7 @@ function commitDim(v,off){
   const t=tool, ov=dirL(PIDX.get(t.pts[0].pn),v);
   endTool();
   if(t.edit){const i=A.findIndex(a=>a.id===t.edit); if(i<0) return;
-    Object.assign(A[i],{pts:t.pts,dir:t.dir,show:t.show,ov,off,flip:false});sel=i;changed(true);openAnn()}
+    Object.assign(A[i],{pts:t.pts,dir:t.dir,show:t.show,ov,off,flip:false});sel=i;changed(true)}     // 改完接着开着它的小界面
   else addAnn({type:'dim',chain:t.chain,pts:t.pts,dir:t.dir,show:t.show,ov,off});
 }
 /* ----- 开槽：照单次测量的路数，点一下定起点，移动鼠标定长度（或者输入长度） ----- */
@@ -2279,7 +2289,7 @@ function finishPts(){
   if(tool.edit&&tool.ov){
     const t=tool, i=A.findIndex(a=>a.id===t.edit); endTool(); if(i<0) return;
     if(t.pts.length===t.keep&&A[i].show===t.show){select(i,false);return}      // 没加点也没换读数：什么都没变
-    A[i].pts=t.pts;A[i].dir=t.dir;A[i].show=t.show;sel=i;changed(true);openAnn();return}
+    A[i].pts=t.pts;A[i].dir=t.dir;A[i].show=t.show;sel=i;changed(true);return}
   enterPlace();
 }
 function toolTap(cx,cy,touch){
@@ -2313,7 +2323,9 @@ function toolTap(cx,cy,touch){
 function tapAt(cx,cy,touch){
   if(tool){toolTap(cx,cy,touch);return}
   const i=hitBadge(cx,cy,touch);
-  if(i>=0){showInfo(null);select(i,false);if(!NARROW.matches)openAnn();return}
+  /* 点中标注：清单里展开它。点中画上去的东西（测量、高亮、槽口、开洞）：在它旁边弹出小界面 */
+  if(i>=0){showInfo(null);popXY=[cx,cy];select(i,false);if(isNote(A[i])&&!NARROW.matches)openAnn();return}
+  if(sel>=0&&A[sel]&&!isNote(A[sel])) select(-1);       // 点别处：小界面收起来
   pickAt(cx,cy,touch);
 }
 /* 鼠标在模型上移动时预告会吸到哪里、会量出多少、尺寸线会放到哪（触屏没有悬停，点下去再看） */
@@ -2359,9 +2371,13 @@ function openAnn(){
 }
 function closeAnn(){document.body.classList.remove('ann-open');tog2.setAttribute('aria-expanded','false');cap()}
 function addAnn(o){
-  const an=norm(Object.assign({id:nid(),t:Date.now()},o,(isNote(o)&&typeof o.pn!=='string')?{}:{view:getView()}));
+  const nt=isNote(o);
+  const an=norm(Object.assign({id:nid(),t:Date.now()},o,(nt&&typeof o.pn==='string')?{view:getView()}:{}));
   if(!an) return;
-  A.push(an);sel=A.length-1;changed(true);openAnn();
+  A.push(an);
+  /* 画上去的东西做完就完了：不进清单、不选中、不弹界面；要改，在模型上点它 */
+  if(!nt){sel=-1;changed(true);return}
+  sel=A.length-1;changed(true);openAnn();
   const box=document.querySelector('#annList .an.sel');
   if(box){if(box.scrollIntoView)box.scrollIntoView({block:'nearest'});
     const ta=box.querySelector('textarea');if(ta&&!NARROW.matches)ta.focus()}
@@ -2369,7 +2385,7 @@ function addAnn(o){
 /* fly：转到那一条的画面；没有位置的文件标注，改成打开它的第一个文件
    （quiet：一条条往下翻的时候不要自己弹出来） */
 function select(i,fly,quiet){
-  sel=i;renderList();cap();
+  sel=i;renderList();cap();renderPop();
   if(i>=0){
     const an=A[i];
     if(fly){if(an.view)applyView(an.view,an);
@@ -2379,9 +2395,9 @@ function select(i,fly,quiet){
   }
   draw(false);
 }
-/* 上一条 / 下一条：在同一类里翻（标注翻标注，画上去的东西翻画上去的东西） */
-function step(d){if(!A.length) return;
-  const ids=sel>=0?sameGroup(sel):A.map((_,k)=>k), k=ids.indexOf(sel);
+/* 上一条 / 下一条：只在标注里翻 */
+function step(d){const ids=A.map((a,k)=>isNote(a)?k:-1).filter(k=>k>=0); if(!ids.length) return;
+  const k=ids.indexOf(sel);
   select(ids[((k<0?0:k+d)%ids.length+ids.length)%ids.length],true,true)}
 /* ---------- 撤销 / 重做 ---------- */
 /* 每改一次，把改之前的整份标注压进撤销栈（最多 100 步）。附件的内容不复制，只记着是
@@ -2407,8 +2423,10 @@ function restore(s){
   /* 选中变回来的那一条：撤销删除 = 刚回来的，撤销改动 = 被改的那条 */
   let i=A.findIndex(a=>{const o=cur.get(a.id);return !o||!sameAn(o,a)});
   if(i<0&&keep) i=A.findIndex(a=>a.id===keep);
+  /* 变回来的是画上去的东西：不自己弹小界面（本来就开着它的，接着开） */
+  if(i>=0&&!isNote(A[i])&&A[i].id!==keep) i=-1;
   sel=i;lastKey='';dirty=true;
-  rebuildMarks();renderList();counts();cap();autosave();state();undoBtns();draw(false);
+  rebuildMarks();renderList();renderPop();counts();cap();autosave();state();undoBtns();draw(false);
   if(fi>=0){const nb=document.querySelector('#annList .an.sel .anE'), f=nb&&nb.querySelectorAll('textarea,input')[fi];
     if(f){f.focus();try{f.setSelectionRange(f.value.length,f.value.length)}catch(_){}}}
 }
@@ -2441,7 +2459,8 @@ function undoBtns(){
 function changed(structural,key){
   record(key);
   dirty=true;rebuildMarks();
-  if(structural!==false)renderList();else if(sel>=0)fillRow(sel);
+  if(structural!==false){renderList();renderPop()}
+  else if(sel>=0){fillRow(sel);const sb=document.getElementById('popS');if(sb&&A[sel]&&!isNote(A[sel]))sb.textContent=sub(A[sel])}
   counts();cap();autosave();state();undoBtns();draw(false);
 }
 function counts(){                       // 只数标注（文字、文件）
@@ -2534,65 +2553,20 @@ async function addFiles(an,files){
 }
 function pickFiles(an,acc){const f=document.getElementById('fMedia');f.accept=acc;f.value='';
   f.onchange=()=>addFiles(an,Array.from(f.files));f.click()}
-function editor(an,i){
-  const e=el('div','anE'), row=()=>{const r=el('div','row');e.appendChild(r);return r};
-  /* 字只有文字标注能写；测量、高亮、槽口、开洞不带说明（要说明就另外加一条文字标注） */
-  if(an.type==='note'){const ta=el('textarea');ta.value=an.text;ta.placeholder=PH.note;ta.setAttribute('aria-label','文字');
-    ta.oninput=()=>{an.text=ta.value;changed(false,'text:'+an.id)};e.appendChild(ta)}
-  if(an.type==='notch'||an.type==='hole'){
-    const g=an.g, live=!!pieceOf(an);
-    if(an.type==='hole'){const r=row();
-      [['c','圆洞'],['r','方洞']].forEach(s=>{const b=el('button',g.sh===s[0]?'on':'',s[1]);
-        b.onclick=()=>{g.sh=s[0];cutBox(an);changed(true)};b.disabled=!live;r.appendChild(b)})}
-    const fg=el('div','fg');e.appendChild(fg);
-    const f=(lab,key,min)=>{const l=el('label',null,lab), inp=el('input');
-      inp.type='number';inp.inputMode='decimal';inp.step='1';inp.min=min;inp.value=g[key];inp.disabled=!live;
-      inp.oninput=()=>{const v=parseFloat(inp.value);if(!isFinite(v)||v<min)return;g[key]=v;cutBox(an);changed(false,'g:'+an.id+':'+key)};
-      l.appendChild(inp);fg.appendChild(l)};
-    /* 槽：位置是做的时候点出来的（起点），这里只改长、宽、深 —— 改长度时起点不动 */
-    if(an.type==='notch'){f('长','L',1);f('宽','W',1);f('深','Dp',1)}
-    else{
-      if(g.sh==='c') f('直径','d',1); else{f('长（沿木料）','L',1);f('宽','W',1)}
-      f(AXN[g.ax],'pos',0);f(AXW[g.wa],'off',0)}
-    if(!live)e.appendChild(el('div','issue','原来那根木料找不到了：位置按保存时的画，尺寸改不了。'));
-  }
-  if(an.type==='dim'){
-    const g=dimGeo(an,false);
-    if(an.chain){const r=row();           // 连续尺寸：读数写哪几样
-      ['r','a','ar'].forEach(k=>{const b=el('button',an.show===k?'on':'',SHOWN[k]);
-        b.onclick=()=>{an.show=k;changed(true)};r.appendChild(b)})}
-    if(g){
-      if(an.chain){
-        /* 各点的读数：绝对 = 到 0 点（第一个点下去的那个）的距离，相对 = 到前一个点的间距 */
-        const o=g.ord, wr=el('div','dtw'), tb=el('table','dt'), hd=el('tr');
-        ['点','绝对','相对',''].forEach(t=>hd.appendChild(el('th',null,t)));tb.appendChild(hd);
-        o.forEach((k,j)=>{const tr=el('tr'), td=el('td');
-          tr.appendChild(el('td',null,(j+1)+(k?'':'（0 点）')));
-          tr.appendChild(el('td',null,fmtD(Math.abs(g.val[k]))));
-          tr.appendChild(el('td',null,j?fmtD(g.val[k]-g.val[o[j-1]]):'—'));
-          if(k&&an.pts.length>2){const x=el('button','mx','×');x.title='去掉这个点';
-            x.setAttribute('aria-label','去掉第 '+(j+1)+' 个点');
-            x.onclick=()=>{an.pts.splice(k,1);changed(true)};td.appendChild(x)}
-          tr.appendChild(td);tb.appendChild(tr)});
-        wr.appendChild(tb);e.appendChild(wr)}
-      /* 尺寸线放在哪是做的时候手动放的；这里能改拉出的距离、换到另一侧，或者重新放一次
-         （前几版留下来没放过的，重新放一次就归用户管了） */
-      const fg=el('div','fg');e.appendChild(fg);
-      if(an.ov){const l1=el('label',null,'尺寸线拉出（mm）'), inp=el('input');
-        inp.type='number';inp.step='50';inp.value=an.off;
-        inp.oninput=()=>{const v=parseFloat(inp.value);if(!isFinite(v))return;an.off=Math.round(v);changed(false,'off:'+an.id)};
-        l1.appendChild(inp);fg.appendChild(l1)}
-      const l2=el('div','lab'), two=el('div','two'), rb=el('button',null,'重新放置'), fb=el('button',null,'换一侧');
-      l2.appendChild(el('span',null,an.ov?'尺寸线':'尺寸线（老版本自动摆的）'));
-      rb.onclick=()=>startTool(an.chain?'dimc':'dim1',an,true);
-      fb.onclick=()=>{if(an.off)an.off=-an.off;else if(an.ov)an.ov=an.ov.map(x=>-x||0);else an.flip=!an.flip;changed(true)};
-      two.appendChild(rb);two.appendChild(fb);l2.appendChild(two);fg.appendChild(l2);
-      if(an.chain){const ad=el('button',null,'继续加点');ad.onclick=()=>startTool('dimc',an);row().appendChild(ad)}
-    }else e.appendChild(el('div','issue','原来那块板找不到了：这条尺寸画不出来。'));
-  }
-  const cr=el('div','cols');e.appendChild(cr);
+/* 八个色点 */
+function colorDots(an){
+  const cr=el('div','cols');
   COLORS.forEach((c,k)=>{const b=el('button','cdot'+(an.color===c?' on':''));b.style.background=c;
     b.title=CNAME[k];b.setAttribute('aria-label','颜色：'+CNAME[k]);b.onclick=()=>{an.color=c;changed(true)};cr.appendChild(b)});
+  return cr;
+}
+/* 清单里一条标注（文字 / 文件）展开后的编辑区：字或文件、颜色、已处理、视角、删除 */
+function editor(an,i){
+  const e=el('div','anE'), row=()=>{const r=el('div','row');e.appendChild(r);return r};
+  /* 字只有文字标注能写 */
+  if(an.type==='note'){const ta=el('textarea');ta.value=an.text;ta.placeholder=PH.note;ta.setAttribute('aria-label','文字');
+    ta.oninput=()=>{an.text=ta.value;changed(false,'text:'+an.id)};e.appendChild(ta)}
+  const cr=colorDots(an);e.appendChild(cr);
   const dl=el('label','dn'), dc=el('input');dc.type='checkbox';dc.checked=an.done;
   dc.onchange=()=>{an.done=dc.checked;changed(false)};dl.appendChild(dc);dl.appendChild(document.createTextNode('已处理'));
   cr.appendChild(dl);
@@ -2612,16 +2586,65 @@ function editor(an,i){
   vr.appendChild(g3);
   return e;
 }
+/* 画在模型上的东西（测量、高亮、槽口、开洞）的小界面里放什么：各自的尺寸 / 读数、颜色、删除。
+   没有说明、没有附件、没有视角、没有「已处理」—— 那些是标注的事 */
+function markEditor(an,i){
+  const e=el('div','anE'), row=()=>{const r=el('div','row');e.appendChild(r);return r};
+  if(an.type==='notch'||an.type==='hole'){
+    const g=an.g, live=!!pieceOf(an);
+    if(an.type==='hole'){const r=row();
+      [['c','圆洞'],['r','方洞']].forEach(s=>{const b=el('button',g.sh===s[0]?'on':'',s[1]);
+        b.onclick=()=>{g.sh=s[0];cutBox(an);changed(true)};b.disabled=!live;r.appendChild(b)})}
+    const fg=el('div','fg');e.appendChild(fg);
+    const f=(lab,key,min)=>{const l=el('label',null,lab), inp=el('input');
+      inp.type='number';inp.inputMode='decimal';inp.step='1';inp.min=min;inp.value=g[key];inp.disabled=!live;
+      inp.oninput=()=>{const v=parseFloat(inp.value);if(!isFinite(v)||v<min)return;g[key]=v;cutBox(an);changed(false,'g:'+an.id+':'+key)};
+      l.appendChild(inp);fg.appendChild(l)};
+    /* 槽：位置是做的时候点出来的（起点），这里只改长、宽、深 —— 改长度时起点不动 */
+    if(an.type==='notch'){f('长','L',1);f('宽','W',1);f('深','Dp',1)}
+    else{
+      if(g.sh==='c') f('直径','d',1); else{f('长（沿木料）','L',1);f('宽','W',1)}
+      f(AXN[g.ax],'pos',0);f(AXW[g.wa],'off',0)}
+    if(!live)e.appendChild(el('div','issue','原来那根木料找不到了：位置按保存时的画，尺寸改不了。'));
+  }
+  if(an.type==='dim'){
+    const g=dimGeo(an,false);
+    if(an.chain){const r=row();           // 连续尺寸：读数写哪几样（相对 / 绝对 / 两样都写）
+      ['r','a','ar'].forEach(k=>{const b=el('button',an.show===k?'on':'',SHOWN[k]);
+        b.onclick=()=>{an.show=k;changed(true)};r.appendChild(b)})}
+    if(g){
+      /* 尺寸线放在哪是做的时候手动放的；这里能改拉出的距离、换到另一侧，或者重新放一次
+         （前几版留下来没放过的，重新放一次就归用户管了） */
+      const fg=el('div','fg');e.appendChild(fg);
+      if(an.ov){const l1=el('label',null,'尺寸线拉出（mm）'), inp=el('input');
+        inp.type='number';inp.step='50';inp.value=an.off;
+        inp.oninput=()=>{const v=parseFloat(inp.value);if(!isFinite(v))return;an.off=Math.round(v);changed(false,'off:'+an.id)};
+        l1.appendChild(inp);fg.appendChild(l1)}
+      const l2=el('div','lab'), two=el('div','two'), rb=el('button',null,'重新放置'), fb=el('button',null,'换一侧');
+      l2.appendChild(el('span',null,an.ov?'尺寸线':'尺寸线（老版本自动摆的）'));
+      rb.onclick=()=>startTool(an.chain?'dimc':'dim1',an,true);
+      fb.onclick=()=>{if(an.off)an.off=-an.off;else if(an.ov)an.ov=an.ov.map(x=>-x||0);else an.flip=!an.flip;changed(true)};
+      two.appendChild(rb);two.appendChild(fb);l2.appendChild(two);fg.appendChild(l2);
+      if(an.chain){const ad=el('button',null,'继续加点');ad.onclick=()=>startTool('dimc',an);row().appendChild(ad)}
+    }else e.appendChild(el('div','issue','原来那块板找不到了：这条尺寸画不出来。'));
+  }
+  e.appendChild(colorDots(an));
+  const g3=el('button','del','删除');
+  g3.title='点了就删；删错了按撤销（Ctrl+Z）';
+  g3.onclick=()=>{A.splice(i,1);sel=-1;changed(true)};
+  row().appendChild(g3);
+  return e;
+}
+/* 清单里只有标注（文字、文件），带编号。画在模型上的东西（测量、高亮、槽口、开洞）不进清单 ——
+   要改就在模型上点它（见 renderPop） */
 function renderList(){
   const host=document.getElementById('annList');host.textContent='';
-  if(!A.length)host.appendChild(el('div','mini','还没有标注。点上面的按钮，再到模型上点位置。'));
-  /* 先是标注（文字、文件），带编号；后面一组是画在模型上的东西（测量、高亮、槽口、开洞），不编号，
-     前头只有一个色块 */
-  const one=i=>{const an=A[i], nt=isNote(an);
+  if(!A.some(isNote))host.appendChild(el('div','mini','还没有标注。点上面的「文字标注」「文件标注」，再到模型上点位置。'));
+  A.forEach((an,i)=>{ if(!isNote(an)) return;
     const on=i===sel, box=el('div','an'+(on?' sel':''));box.dataset.i=i;
     const h=el('div','anH'), t=el('div','anT');
     h.tabIndex=0;h.setAttribute('role','button');h.setAttribute('aria-expanded',on?'true':'false');
-    h.appendChild(el('span',nt?'num':'num dotm',nt?String(numOf(i)):''));
+    h.appendChild(el('span','num',String(numOf(i))));
     t.appendChild(el('div','t1'));t.appendChild(el('div','t2 mini'));h.appendChild(t);
     const go=()=>{if(i===sel){select(-1);return}select(i,true);if(NARROW.matches)closeAnn()};
     h.onclick=go;h.onkeydown=ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();go()}};
@@ -2630,24 +2653,57 @@ function renderList(){
     const m=el('div','anM');box.appendChild(m);
     host.appendChild(box);
     fillRow(i);fillMedia(i,m,on);
-    if(on)box.appendChild(editor(an,i))};
-  const N=[], M=[]; A.forEach((an,i)=>(isNote(an)?N:M).push(i));
-  N.forEach(one);
-  if(M.length){host.appendChild(el('div','anG mini','测量 · 高亮 · 槽口 · 开洞（不编号）'));M.forEach(one)}
+    if(on)box.appendChild(editor(an,i))});
+}
+/* ---------- 画上去的东西：点一下，在旁边弹出一个半透明的小界面 ---------- */
+/* 用户（2026-11-14）：「测量、高亮、槽口、开洞，这些不需要绑定视角，也不需要体现在主列表里面。但是修改还是
+   需要的，修改就是点一下，在旁边弹出一个半透明小界面，里面可以做一些更改，比如说改颜色、相对尺寸改绝对
+   尺寸，或者就是删除」。
+   sel 指着一个画上去的东西时，小界面开着；点别处、按 Esc、点 ×、去用工具，就收起来。
+   它跟着那个东西走：每画一帧挪到它旁边（尺寸是点中的那一段旁边，popT 记着点在尺寸线的哪儿，0～1）。 */
+let popXY=null, popT=.5, popId='';
+function popAnchor(an){
+  if(an.type==='dim'){const g=dimGeo(an,true); if(!g) return null;
+    const o=g.ord, a=g.N[o[0]], b=g.N[o[o.length-1]];return [0,1,2].map(k=>a[k]+(b[k]-a[k])*popT)}
+  const pi=PIDX.get(an.pn);return pi==null?null:L2W(pi,an.pt)}
+function popPlace(){
+  const P=document.getElementById('pop'), an=sel>=0?A[sel]:null; if(P.hidden||!an||isNote(an)||!MVP) return;
+  const w=popAnchor(an), s=w&&w2s(w); if(!s||s[2]<=0) return;
+  const rc=cv.getBoundingClientRect(), pw=P.offsetWidth||226, ph=P.offsetHeight||170, W=innerWidth, H=innerHeight;
+  let x=rc.left+s[0]+18, y=rc.top+s[1]+18;
+  if(x+pw>W-8) x=rc.left+s[0]-18-pw;            // 右边放不下：放到左边
+  if(y+ph>H-8) y=rc.top+s[1]-18-ph;             // 下边放不下：放到上边
+  P.style.left=Math.max(8,Math.min(W-pw-8,x))+'px';P.style.top=Math.max(8,Math.min(H-ph-8,y))+'px';
+}
+function renderPop(){
+  const P=document.getElementById('pop'), an=sel>=0?A[sel]:null;
+  if(!an||isNote(an)||tool){P.hidden=true;P.textContent='';popXY=null;return}
+  if(an.id!==popId){popId=an.id;popT=.5}
+  if(popXY){                                      // 刚在模型上点中的：记下点在尺寸线的哪儿
+    if(an.type==='dim'){const g=dimGeo(an,true);
+      if(g&&MVP){const o=g.ord, rc=cv.getBoundingClientRect(), a=w2s(g.N[o[0]]), b=w2s(g.N[o[o.length-1]]),
+            dx=b[0]-a[0], dy=b[1]-a[1], L=dx*dx+dy*dy;
+        if(a[2]>0&&b[2]>0&&L>1) popT=Math.max(0,Math.min(1,((popXY[0]-rc.left-a[0])*dx+(popXY[1]-rc.top-a[1])*dy)/L))}}
+    popXY=null}
+  P.textContent='';
+  const hd=el('div','popH'), x=el('button',null,'×'), sb=el('span','mini',sub(an));
+  hd.appendChild(el('b',null,tname(an)));sb.id='popS';hd.appendChild(sb);
+  x.title='关闭';x.setAttribute('aria-label','关闭');x.onclick=()=>select(-1);hd.appendChild(x);
+  P.appendChild(hd);P.appendChild(markEditor(an,sel));P.hidden=false;popPlace();
 }
 /* 手机上列表抽屉收起时，选中的那条在底部出一张小卡片：说明、附件、上一条 / 下一条 */
 function cap(){
   const c=document.getElementById('cap');
-  const show=sel>=0&&!tool&&NARROW.matches&&!document.body.classList.contains('ann-open');
+  const show=sel>=0&&!!A[sel]&&isNote(A[sel])&&!tool&&NARROW.matches&&!document.body.classList.contains('ann-open');
   c.hidden=!show;document.body.classList.toggle('has-cap',show);
   if(!show) return;
-  const an=A[sel], n=document.getElementById('capN'), ids=sameGroup(sel);
-  n.textContent=isNote(an)?numOf(sel):'';n.style.background=an.color;n.style.color=ink(an.color);
+  const an=A[sel], n=document.getElementById('capN');
+  n.textContent=numOf(sel);n.style.background=an.color;n.style.color=ink(an.color);
   document.getElementById('capT').textContent=[tname(an),where(an)].filter(Boolean).join(' · ');
   document.getElementById('capS').textContent=sub(an);
   putText(document.getElementById('capX'),an.text);
   fillMedia(sel,document.getElementById('capM'),false);
-  document.getElementById('capI').textContent=(ids.indexOf(sel)+1)+' / '+ids.length;
+  document.getElementById('capI').textContent=numOf(sel)+' / '+A.filter(isNote).length;
 }
 
 /* ---------- 保存 / 导出 / 导入 ---------- */
@@ -2670,7 +2726,7 @@ function resetDraft(){
   try{localStorage.removeItem(LSKEY)}catch(_){}
   if(tool)endTool();
   loadItems(ANN0.items);fromDraft=false;dirty=false;sel=-1;record();
-  rebuildMarks();renderList();counts();state();cap();undoBtns();draw(false);
+  rebuildMarks();renderList();renderPop();counts();state();cap();undoBtns();draw(false);
 }
 /* 带标注的整页源码：把 SRC 里那块标注数据换成现在的。< 写成 <，数据里就不会
    出现能提前结束 script 的字样 */
@@ -2687,21 +2743,14 @@ function download(name,text,type){
   a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();
   setTimeout(()=>URL.revokeObjectURL(u),30000);
 }
-/* 清单的文字版：先是编了号的标注，后面是画在模型上的东西（不编号） */
+/* 清单的文字版：只有标注（文字、文件），带编号。画在模型上的东西不进清单 */
 function listText(){
-  const N=[], M=[]; A.forEach((an,i)=>(isNote(an)?N:M).push(i));
+  const N=[]; A.forEach((an,i)=>{if(isNote(an))N.push(i)});
   let s=(D.job?D.job+' ':'')+'框架模型标注（共 '+N.length+' 条）';
   N.forEach(i=>{const an=A[i], w=where(an);
     s+='\n'+numOf(i)+'. 【'+tname(an)+'】'+(w?w+'：':'')+
       (an.type==='note'?an.text.replace(/\s*\n\s*/g,' '):an.media.length?an.media.map(m=>m.n||'未命名').join('、'):'还没有文件')+
       (an.done?'（已处理）':'')});
-  if(M.length) s+='\n测量、高亮、槽口、开洞（'+M.length+' 处）';
-  M.forEach(i=>{const an=A[i];
-    s+='\n· 【'+tname(an)+'】'+[where(an),sub(an)].filter(Boolean).join('，')+(an.done?'（已处理）':'');
-    if(an.type==='dim'&&an.chain){const q=dimGeo(an,false);
-      if(q){const o=q.ord;
-        s+='\n   相对：'+o.slice(1).map((k,j)=>fmtD(q.val[k]-q.val[o[j]])).join(' / ')+
-           '\n   绝对：'+o.map(k=>fmtD(Math.abs(q.val[k]))).join(' / ')}}});
   return s;
 }
 function importText(s){
@@ -2771,7 +2820,8 @@ addEventListener('keydown',e=>{
   if(!document.getElementById('lb').hidden){closeLb();return}
   /* Esc：有引导点先清引导点，再按一次才退出工具 */
   if(tool&&guided()){tool.guide=[];tool.gLock=-1;tool.gS=-1;hover=null;hud();undoBtns();if(hovXY)hoverNow();else draw(false);return}
-  if(tool)endTool();
+  if(tool){endTool();return}
+  if(sel>=0&&A[sel]&&!isNote(A[sel])) select(-1);       // 小界面开着：收起来
 });
 addEventListener('beforeunload',e=>{if(dirty&&!lsOK){e.preventDefault();e.returnValue=''}});
 
