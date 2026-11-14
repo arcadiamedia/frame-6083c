@@ -74,6 +74,10 @@ td:first-child{color:var(--dim);padding-right:8px;white-space:nowrap}
 .anH{display:flex;gap:8px;padding:7px 8px;cursor:pointer;align-items:flex-start}
 .num{flex:none;width:20px;height:20px;border-radius:50%;font-size:11px;font-weight:700;
   display:flex;align-items:center;justify-content:center}
+.num.dotm{width:12px;height:12px;margin:4px;border-radius:3px}
+.anG{margin:10px 2px 6px}
+.anL{display:flex;flex-direction:column;gap:3px;padding:0 8px 8px 36px}
+.anL a,#capX a{color:var(--acc);overflow-wrap:anywhere}
 .anT{min-width:0;flex:1}
 .t1{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .an.sel .t1{white-space:normal;overflow-wrap:anywhere}
@@ -236,13 +240,13 @@ body.side-open #tog .i-x{display:inline}
   <div id="annHead" role="button" tabindex="0" aria-expanded="true" aria-controls="annBody"><h1>标注 <span class="mini" id="annN"></span></h1><button id="bUndo" class="ic" type="button" title="撤销（Ctrl+Z）" aria-label="撤销" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 010 11H11"/></svg></button><button id="bRedo" class="ic" type="button" title="重做（Ctrl+Shift+Z）" aria-label="重做" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 000 11H13"/></svg></button><svg id="annFold" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></div>
   <div id="annBody">
     <div class="row">
+      <button data-tool="note">文字标注</button><button data-tool="doc">文件标注</button>
+    </div>
+    <div class="row">
       <button data-tool="hl">高亮构件</button><button data-tool="notch">槽口</button><button data-tool="hole">开洞</button>
     </div>
     <div class="row">
       <button data-tool="dim1">单次测量</button><button data-tool="dimc">连续测量</button>
-    </div>
-    <div class="row">
-      <button data-tool="note">文字</button><button data-tool="doc">资料</button>
     </div>
     <div id="annList"></div>
     <div class="row">
@@ -669,15 +673,15 @@ function pickPiece(cx,cy,nb){
   const id=px[0]+px[1]*256+px[2]*65536;   // 0 = 背景
   return id?(pieces[id-1]||null):null;
 }
-function pickAt(cx,cy,touch){
-  const p=pickPiece(cx,cy);
-  lastHit=p?hitInfo(p,cx,cy,touch):null;    // 「标注这根构件」把序号放在点中的地方
-  draw(false);
-  showInfo(p);
-}
+function pickAt(cx,cy,touch){showInfo(pickPiece(cx,cy));draw(false)}
+/* 点中的那根构件：信息框开着的时候临时罩一层红的（和「高亮构件」画出来一个样）。换一根就挪过去，
+   点空白处、关掉信息框、去用别的工具就没了 —— 只是「现在看的是这根」，不进标注、不存盘。
+   用户：「点击构件给这个构件有一个高亮显示…显示为红色，但它是临时的」。 */
+let pickP=null;
 
 function showInfo(p){
   const el=document.getElementById('info');
+  if(pickP!==(p||null)){pickP=p||null;rebuildMarks();if(MVP)draw(false)}
   if(!p){el.style.display='none';return}
   const P0=D.panels[p.pi], bx=boxOf(p);
   const rows=[
@@ -697,15 +701,6 @@ function showInfo(p){
   body.innerHTML='<h1>'+D.kinds[p.ki]+'</h1><table>'+
     rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('')+'</table>'+
     (P0.issues.length?'<div class="issue">'+P0.issues.map(t=>'⚠ '+t).join('<br>')+'</div>':'');
-  const rw=document.createElement('div'), bh=document.createElement('button');
-  rw.className='row'; bh.textContent='标注这根构件';
-  bh.onclick=()=>{
-    const b=boxOf(p), pt=(lastHit&&lastHit.p===p)?lastHit.raw
-      :[(b.lo[0]+b.hi[0])/2,b.lo[1],(b.lo[2]+b.hi[2])/2];
-    showInfo(null);
-    addAnn({type:'hl',pn:P0.n,mi:p.mi,ms:sig(p),pt:r3(pt)});
-  };
-  rw.appendChild(bh); body.appendChild(rw);
   body.scrollTop=0;
   el.style.display='block';
 }
@@ -783,6 +778,8 @@ function hud(){
       num('长度');
       btn('撤销上一点',undo);
     }else add(el('span','tip',TIPS[tool.type]));
+    /* 文件标注平常点在模型上；和哪儿都不相干的文件（整套图纸之类）可以不定位置，只进清单 */
+    if(tool.type==='doc') btn('不定位置',()=>{endTool();addDoc({})});
     /* 引导点的开关：亮着的时候点下去的是引导点。电脑上按住 Ctrl 就是它亮着；手机上没有 Ctrl，点它 */
     if(gd){const x=btn('引导点',()=>{tool.gBtn=!tool.gBtn;again()},guideOn()?'on':'');x.id='gBtn';
       x.title='亮着的时候点下去的是引导点，不是真正的点；读数从引导点量起。电脑上按住 '+(MAC?'⌘':'Ctrl')+' 也一样'}
@@ -865,15 +862,15 @@ document.getElementById('clip').oninput=e=>{
    保存：每次改动自动存一份浏览器本地草稿；「保存 HTML」把标注写回本页源码（SRC 是
    脚本开头抓下来的原始页面）另存一份 —— 还是单个文件，发给别人打开就带着标注。
    标注里的字来自用户或别人给的文件，一律用 textContent 放进页面，不拼 HTML。 */
-const TYPES={hl:'构件高亮',notch:'槽口',hole:'开洞',dim:'尺寸',note:'文字',doc:'资料'};
+const TYPES={hl:'构件高亮',notch:'槽口',hole:'开洞',dim:'尺寸',note:'文字',doc:'文件'};
 /* 八种颜色，顺序是用户定的：绿 蓝 黄 橙 红 青 紫 黑 */
 const COLORS=['#3ddc5f','#2f9bff','#ffd60a','#ff9f0a','#ff453a','#19d3c5','#c56bff','#111111'];
 const CNAME=['绿','蓝','黄','橙','红','青','紫','黑'];
 const DEFCOL={hl:4,notch:1,hole:6,dim:5,note:0,doc:0};
-const PH={hl:'说明，比如：尺寸不对，应为 140×45',notch:'说明，比如：给拉条让位',
-  hole:'说明，比如：穿 Ø20 水管',dim:'说明，比如：这里应该是 600',note:'写在这里',doc:'这份资料是什么'};
+const PH={note:'写在这里；写上网址会变成能点的链接'};
 const TIPS={hl:'点一下要标的那根木料',notch:'点一下开槽的起点（自动吸附顶点、中点、边线），再往要开的方向拉',
-  hole:'点一下开洞的位置（洞从点中的那个面打穿）',note:'点一下要写字的位置（自动吸附顶点、中点、边线）'};
+  hole:'点一下开洞的位置（洞从点中的那个面打穿）',note:'点一下要写字的位置（自动吸附顶点、中点、边线）',
+  doc:'点一下这份文件要标在哪（自动吸附顶点、中点、边线）'};
 const AXN=['距左端','距内面','距下端'], AXW=['距左边','距内面','距下边'];
 /* 模型的三根轴 X / Y / Z（Z 朝上）—— 取尺寸时方向往它们上面吸、锁；不画出来，只在吸上的时候
    把那根线换成对应的颜色 */
@@ -900,7 +897,7 @@ if(Array.isArray(ANN0)) ANN0={items:ANN0};
 const LSKEY='fpann:'+(D.job||'')+':'+(ANN0.rev||'0');
 
 let A=[], sel=-1, tool=null, hover=null, dirty=false, fromDraft=false, lsOK=true,
-    lastHit=null, MVP=null, hits=[];
+    MVP=null, hits=[];
 
 const num=v=>typeof v==='number'&&isFinite(v);
 const v3=a=>Array.isArray(a)&&a.length===3&&a.every(num);
@@ -960,7 +957,7 @@ function pieceOf(an){const pi=PIDX.get(an.pn);
   return (pi==null||an.mi==null||an.mi<0)?null:(PMAP.get(pi+':'+an.mi)||null)}
 /* 重新生成模型后构件在板里的序号可能变：按「件号+位置+尺寸」在同一块板里找回来 */
 function relink(an){
-  if(an.type==='dim'||an.type==='doc'||!an.ms) return;
+  if(an.type==='dim'||!an.ms||typeof an.pn!=='string') return;
   const pi=PIDX.get(an.pn); if(pi==null) return;
   const p=PMAP.get(pi+':'+an.mi); if(p&&sig(p)===an.ms) return;
   const q=pieces.find(q=>q.pi===pi&&sig(q)===an.ms); an.mi=q?q.mi:-1;
@@ -1045,6 +1042,74 @@ function hitInfo(p,cx,cy,touch,ref,extra){
   h.loc=c?c.q:h.raw; h.snap=c?c.kind:'f'; return h;
 }
 
+/* ---------- 标注和「画在模型上的东西」分开 ---------- */
+/* 用户（2026-11-14）：「那些测量、高亮、开槽、开洞之类的，不参与编号，编号只是对标注生效。标注分为文字和
+   文件，文字那就是文字，如果输入的文字是个链接，也能识别为链接，点了就能跳转。文件嘛，就是包含 PDF、图片、
+   视频这些。既然那些测量、开槽之类的没有编号，它们本身也不能添加文字说明 —— 需要的话通过标注另外添加，
+   但是更改颜色是保留的。」
+   · 标注 = 文字（note）、文件（doc）：有编号，点在模型上（老版本的「资料」没有位置，照样认）；
+   · 测量（dim）、高亮（hl）、槽口（notch）、开洞（hole）：画在模型上的东西，不编号、不带说明、不带附件，
+     颜色照样能改。
+   都还放在同一个数组 A 里（撤销、保存、导入导出不用分两套），编号只数标注。 */
+function isNote(an){return an.type==='note'||an.type==='doc'}
+function placed(an){return an.type==='dim'||typeof an.pn==='string'}       // 在模型上有位置
+function numOf(i){let n=0;for(let k=0;k<=i;k++)if(isNote(A[k]))n++;return n}      // 第 i 条是几号标注
+/* 和第 i 条同一类的那些（标注 / 画上去的东西）在 A 里的下标：上一条、下一条在同类里翻 */
+function sameGroup(i){const g=isNote(A[i]);return A.map((a,k)=>isNote(a)===g?k:-1).filter(k=>k>=0)}
+/* 文字里的网址（http / https 开头，或者 www. 开头）：拆成一段一段，带 u 的那几段是链接 */
+const URLRE=/(https?:\/\/[^\s<>"'，。；、）】]+|www\.[^\s<>"'，。；、）】]+)/gi;
+function linkParts(s){const r=[];let k=0;s=String(s||'');
+  s.replace(URLRE,(m,_,i)=>{const u=m.replace(/[.,;:!?)\]]+$/,'');
+    if(i>k)r.push({t:s.slice(k,i)});r.push({t:u,u:/^www\./i.test(u)?'https://'+u:u});k=i+u.length;return m});
+  if(k<s.length)r.push({t:s.slice(k)});return r}
+function linksOf(s){return linkParts(s).filter(p=>p.u)}
+function linkEl(p){const a=el('a',null,p.t);a.href=p.u;a.target='_blank';a.rel='noopener noreferrer';
+  a.onclick=e=>e.stopPropagation();return a}
+/* 把一段文字放进 host：网址做成能点的链接（新开一页），其余照原样。一律建节点，不拼 HTML */
+function putText(host,s){host.textContent='';
+  linkParts(s).forEach(p=>host.appendChild(p.u?linkEl(p):document.createTextNode(p.t)))}
+/* 一条读进来的数据 → 一条或几条。老版本里测量、高亮、槽口、开洞可以带说明和附件，文字可以带附件，
+   「资料」可以带说明和链接 —— 都拆出来，一样不丢：
+   · 说明、链接 → 一条文字标注（链接写成网址，一行一个）；附件 → 一条文件标注；位置都在原来那里；
+   · 拆出来的条目 id 是原来的 id 加 ~t / ~f：同一份文件导入两次不会重复，拆过一次的再读也不会再拆。 */
+function normAll(o){
+  const an=norm(o); if(!an) return [];
+  const out=[an], raw=String(o.text||'').trim(),
+        med=(Array.isArray(o.media)?o.media:[]).map(normMedia).filter(Boolean),
+        files=med.filter(m=>m.k!=='link'),
+        ltxt=med.filter(m=>m.k==='link').map(m=>(m.n&&m.n!==m.u?m.n+' ':'')+m.u).join('\n');
+  const pos=an.type==='dim'?{pn:an.pts[0].pn,pt:an.pts[0].p.slice(),mi:-1,ms:''}
+           :typeof an.pn==='string'?{pn:an.pn,pt:an.pt.slice(),mi:an.mi,ms:an.ms}:{},
+        mk=(sfx,more)=>norm(Object.assign({id:an.id+sfx,t:an.t,done:an.done,view:o.view},pos,more));
+  if(an.type==='note'){
+    if(ltxt) an.text=(an.text?an.text+'\n':'')+ltxt;
+    if(files.length) out.push(mk('~f',{type:'doc',media:files}));
+  }else{
+    const t=[raw,ltxt].filter(Boolean).join('\n');
+    if(t) out.push(mk('~t',{type:'note',text:t}));
+    if(an.type!=='doc'&&files.length) out.push(mk('~f',{type:'doc',media:files}));
+  }
+  return out.filter(Boolean);
+}
+/* 文件标注在模型上、清单里显示成什么：头一个文件的名字，多了写「等 N 个」 */
+function fileLabel(an){const n=an.media.length;
+  if(!n) return '还没有文件';
+  const s=an.media[0].n||'未命名';return (s.length>16?s.slice(0,15)+'…':s)+(n>1?' 等 '+n+' 个':'')}
+/* 加一条文件标注，接着让用户选文件（o 带着位置就标在那儿，不带就只进清单） */
+function addDoc(o){const n=A.length;addAnn(Object.assign({type:'doc'},o));if(A.length>n)pickFiles(A[A.length-1],'')}
+/* 屏幕上一堆点的凸包（逆时针 / 顺时针无所谓，hitBadge 里用射线法判点在不在里面） */
+function hull2(P){
+  const p=P.map(q=>[q[0],q[1]]).sort((a,b)=>a[0]-b[0]||a[1]-b[1]), cr=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]);
+  const lo=[], up=[];
+  for(const q of p){while(lo.length>1&&cr(lo[lo.length-2],lo[lo.length-1],q)<=0)lo.pop();lo.push(q)}
+  for(let i=p.length-1;i>=0;i--){const q=p[i];while(up.length>1&&cr(up[up.length-2],up[up.length-1],q)<=0)up.pop();up.push(q)}
+  return lo.slice(0,-1).concat(up.slice(0,-1));
+}
+function inPoly2(P,x,y){let c=false;
+  for(let i=0,j=P.length-1;i<P.length;j=i++){const a=P[i],b=P[j];
+    if((a[1]>y)!==(b[1]>y)&&x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0]) c=!c}
+  return c}
+
 /* ---------- 标注数据：校验、读入 ---------- */
 function normMedia(m){
   if(!m||typeof m!=='object') return null;
@@ -1063,16 +1128,22 @@ function normMedia(m){
 }
 function norm(o){
   if(!o||typeof o!=='object'||!TYPES.hasOwnProperty(o.type)) return null;
-  const an={id:String(o.id||nid()),type:o.type,text:String(o.text||'').slice(0,4000),
+  /* 字只有「文字」标注有，附件只有「文件」标注有（链接不算文件，写在文字里）。测量、高亮、槽口、开洞
+     不带这些 —— 老数据里带着的，normAll 拆成单独的标注 */
+  const an={id:String(o.id||nid()),type:o.type,text:o.type==='note'?String(o.text||'').slice(0,4000):'',
     color:/^#[0-9a-f]{6}$/i.test(o.color)?o.color:COLORS[DEFCOL[o.type]],done:!!o.done,
-    t:num(o.t)?o.t:0,media:(Array.isArray(o.media)?o.media:[]).map(normMedia).filter(Boolean)};
+    t:num(o.t)?o.t:0,
+    media:o.type==='doc'?(Array.isArray(o.media)?o.media:[]).map(normMedia).filter(m=>m&&m.k!=='link'):[]};
   const v=o.view;
   if(v&&num(v.yaw)&&num(v.pitch)&&num(v.dist)&&v.dist>0&&v3(v.t))
     an.view={yaw:v.yaw,pitch:Math.max(-1.5706,Math.min(1.5706,v.pitch)),dist:v.dist,t:v.t.slice(),o:v.o?1:0,
       exp:num(v.exp)?Math.max(0,Math.min(100,v.exp)):0,clip:num(v.clip)?Math.max(0,Math.min(100,v.clip)):100,
       a:num(v.a)&&v.a>0?v.a:0,
       hl:(Array.isArray(v.hl)?v.hl:[]).map(String),hk:(Array.isArray(v.hk)?v.hk:[]).map(String)};
-  if(o.type==='doc') return an;
+  if(o.type==='doc'||o.type==='note'){
+    /* 标注点在模型上的某个位置；也可以没有位置（老版本的「资料」、提示条上的「不定位置」），那就只在清单里 */
+    if(typeof o.pn==='string'&&v3(o.pt)){an.pn=o.pn;an.mi=Number.isInteger(o.mi)?o.mi:-1;an.ms=String(o.ms||'');an.pt=o.pt.slice()}
+    return an}
   if(o.type==='dim'){
     /* 第一版的格式是 a、b 两个点加 mode（d 直线 / u 沿墙 / n 墙厚 / z 竖向）：换成 pts + dir */
     const ok=q=>q&&typeof q.pn==='string'&&v3(q.p), pts=Array.isArray(o.pts)?o.pts:[o.a,o.b],
@@ -1181,13 +1252,13 @@ function dimGeo(an,exploded){
   return {P,M,N,val,u:u0,w,ord,len:val[ord[ord.length-1]]-val[ord[0]]};
 }
 function anchorW(an){
-  if(an.type==='doc') return null;
+  if(!placed(an)) return null;
   if(an.type==='dim'){const g=dimGeo(an,true); if(!g) return null;
     const a=g.N[g.ord[0]], b=g.N[g.ord[g.ord.length-1]];return [0,1,2].map(k=>(a[k]+b[k])/2)}
   const pi=PIDX.get(an.pn); return pi==null?null:L2W(pi,an.pt);
 }
 function annVisible(an){
-  if(an.type==='doc') return false;
+  if(!placed(an)) return false;
   const pi=PIDX.get(an.pn); if(pi==null||!showLv.has(D.panels[pi].lv)) return false;
   if(an.type==='dim') return an.pts.every(q=>PIDX.has(q.pn));
   const p=pieceOf(an); return !(p&&!showKd.has(p.ki));
@@ -1227,20 +1298,21 @@ function mkPrism(pi,ring,w0,w1,na,col,al,sides){
   for(let i=0;i<n;i++){const j=(i+1)%n;
     tri(lo[i],lo[j],hi[j]);tri(lo[i],hi[j],hi[i]);ln(lo[i],lo[j]);ln(hi[i],hi[j]);if(sides)ln(lo[i],hi[i])}
 }
-/* 标注变了、过滤变了、爆炸量变了都要重排一次（块的世界坐标带着爆炸位移） */
+/* 整根木料罩上一层：按它的准确轮廓四面各放大 1mm */
+function hlPrism(p,col){
+  const b=boxOf(p), cx=(b.lo[0]+b.hi[0])/2, cz=(b.lo[2]+b.hi[2])/2,
+        kx=1+2/Math.max(1,b.hi[0]-b.lo[0]), kz=1+2/Math.max(1,b.hi[2]-b.lo[2]);
+  mkPrism(p.pi,ringOf(p).map(q=>[cx+(q[0]-cx)*kx,cz+(q[1]-cz)*kz]),b.lo[1]-1,b.hi[1]+1,1,col,.5,true);
+}
+/* 标注变了、过滤变了、爆炸量变了、点中的构件换了，都要重排一次（块的世界坐标带着爆炸位移） */
 function rebuildMarks(){
   MK.pos.length=MK.col.length=MK.lpos.length=MK.lcol.length=0; MK.rng=[];
   A.forEach(an=>{
     const r={f0:MK.pos.length/3,l0:MK.lpos.length/3};
-    if(annVisible(an)&&an.type!=='dim'&&an.type!=='note'){
+    if(annVisible(an)&&an.type!=='dim'&&!isNote(an)){
       const pi=PIDX.get(an.pn), col=hex(an.color);
-      if(an.type==='hl'){
-        /* 整根木料罩上一层：按它的准确轮廓四面各放大 1mm */
-        const p=pieceOf(an);
-        if(p){const b=boxOf(p), cx=(b.lo[0]+b.hi[0])/2, cz=(b.lo[2]+b.hi[2])/2,
-                    kx=1+2/Math.max(1,b.hi[0]-b.lo[0]), kz=1+2/Math.max(1,b.hi[2]-b.lo[2]);
-          mkPrism(pi,ringOf(p).map(q=>[cx+(q[0]-cx)*kx,cz+(q[1]-cz)*kz]),b.lo[1]-1,b.hi[1]+1,1,col,.5,true)}
-      }else{
+      if(an.type==='hl'){const p=pieceOf(an); if(p) hlPrism(p,col)}
+      else{
         const b=an.box, g=an.g, e=.5;
         if(an.type==='hole'&&g.sh==='c'){
           const o=[0,1,2].filter(k=>k!==g.na), c0=(b[o[0]]+b[o[0]+3])/2, c1=(b[o[1]]+b[o[1]+3])/2, ring=[];
@@ -1251,6 +1323,8 @@ function rebuildMarks(){
     }
     r.f1=MK.pos.length/3; r.l1=MK.lpos.length/3; MK.rng.push(r);
   });
+  /* 点中的那根构件的临时高亮（见 pickP）：排在最后，不算哪一条标注的 */
+  if(pickP&&showLv.has(pickP.lv)&&showKd.has(pickP.ki)) hlPrism(pickP,hex(COLORS[DEFCOL.hl]));
   MK.nf=MK.pos.length/3; MK.nl=MK.lpos.length/3;
   const up=(b,d)=>{gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(d),gl.DYNAMIC_DRAW)};
   up(MK.bP,MK.pos); up(MK.bC,MK.col); up(MK.bLP,MK.lpos); up(MK.bLC,MK.lcol);
@@ -1310,7 +1384,7 @@ function oBadge(x,y,i,an){const on=i===sel, r=on?12:10;
   ox.beginPath();ox.arc(x,y,r,0,6.2832);ox.fillStyle=an.color;ox.fill();
   ox.lineWidth=on?2.5:1.5;ox.strokeStyle=on?'#fff':halo(an.color);ox.stroke();
   ox.fillStyle=ink(an.color);ox.font='700 '+(on?12:11)+'px system-ui,sans-serif';
-  ox.textAlign='center';ox.textBaseline='middle';ox.fillText(String(i+1),x,y+.5);
+  ox.textAlign='center';ox.textBaseline='middle';ox.fillText(String(numOf(i)),x,y+.5);
   hits.push({x,y,r,i})}
 /* 左端在 (x,y) 的一条文字胶囊（rt：x 是右端）；给了 i 就能点 */
 function oText(x,y,s,i,rt){
@@ -1380,7 +1454,7 @@ function drawDimP(an,i,g){
   if(T.some(s=>s[2]<=0)||SM.some(s=>s[2]<=0)||S.some(s=>s[2]<=0)) return;
   const on=i>=0&&i===sel, c=an.color, n=T.length, o=g.ord, A0=S[o[0]], B0=S[o[n-1]];
   const Lp=Math.hypot(B0[0]-A0[0],B0[1]-A0[1]);
-  if(Lp<1){oDot(A0,c,3.5);if(i>=0)oBadge(A0[0]-17,A0[1],i,an);return}     // 正对着尺寸线看：只剩一个点
+  if(Lp<1){oDot(A0,c,3.5);if(i>=0)hits.push({x:A0[0],y:A0[1],r:7,i});return}     // 正对着尺寸线看：只剩一个点
   /* 面里的两个方向：u 量的方向；wo 拉出去的那一侧（没拉出也有朝向，读数写在那一侧） */
   const wo=an.off<0?g.w.map(x=>-x):g.w, p0=planeAt(g.N[o[0]],g.u,wo,UNIT,true),
         pl=orthoOn?X=>({s:w2s(X),e1:p0.e1,e2:p0.e2}):X=>planeAt(X,g.u,wo,UNIT,true),
@@ -1412,9 +1486,6 @@ function drawDimP(an,i,g){
     oNumP(go(p,0,rs*13),p.e1,p.e2,fmtD(g.val[kb]-g.val[ka]),c)}
   if(abs) o.forEach(k=>oNumP(go(K[k],-11,6+tw[k]/2),K[k].e2,[-K[k].e1[0],-K[k].e1[1]],tx[k],c));
   ox.lineCap='round';
-  if(i>=0){const bx=A0[0]-(B0[0]-A0[0])/Lp*28, by=A0[1]-(B0[1]-A0[1])/Lp*28;
-    if(on&&snip(an)) oText(bx-15,by,snip(an),i,true);          // 说明放在序号左边，不压读数
-    oBadge(bx,by,i,an)}
 }
 /* 画一条尺寸：手动放过的画在面里；前几版留下来没放过的，照老办法冲着屏幕自动摆 */
 function drawDim(an,i){
@@ -1427,7 +1498,7 @@ function drawDimS(an,i){
   const T=g.P.map(w2s), SM=g.M.map(w2s); if(T.some(s=>s[2]<=0)||SM.some(s=>s[2]<=0)) return;
   const on=i>=0&&i===sel, c=an.color, n=T.length, o=g.ord, a3=SM[o[0]], b3=SM[o[n-1]];
   let ux=b3[0]-a3[0], uy=b3[1]-a3[1]; const L=Math.hypot(ux,uy);
-  if(L<1){oDot(a3,c,3.5);if(i>=0)oBadge(a3[0]-17,a3[1],i,an);return}     // 正对着尺寸线看：只剩一个点
+  if(L<1){oDot(a3,c,3.5);if(i>=0)hits.push({x:a3[0],y:a3[1],r:7,i});return}     // 正对着尺寸线看：只剩一个点
   ux/=L;uy/=L;
   /* (nx,ny) 尺寸线在屏幕上的法向，朝外；(ex,ey) 引出线的方向；S 各点在尺寸线上的位置 */
   let nx=-uy, ny=ux, ex, ey, S;
@@ -1478,9 +1549,6 @@ function drawDimS(an,i){
       keep.push(j)}
     keep.forEach(j=>{const k=o[j], s=S[k], r=6+tw[k]/2;
       oNum(s[0]+ex*r-ux*11,s[1]+ey*r-uy*11,tx[k],Math.atan2(ey,ex),c)})}
-  if(i>=0){const bx=A0[0]-ux*28, by=A0[1]-uy*28;
-    if(on&&snip(an)) oText(bx-15,by,snip(an),i,true);          // 说明放在序号左边，不压读数
-    oBadge(bx,by,i,an)}
 }
 /* 鼠标会吸到哪里：形状 = 吸到了什么（方框 顶点 / 三角 中点 / 圆圈 圆心 / ⊥ 垂足 /
    叉 边线上 / 十字 面上） */
@@ -1548,7 +1616,7 @@ function drawTool(){
     if(h[2]>0){
       if(r&&r.free) oDot(h,'#ffffff',3,'rgba(0,0,0,.7)');          // 没点中木料：方向线上的一个点
       else{oMark(h,hover.kind);
-        if(tool.type==='dim'||tool.type==='note'||tool.type==='notch'||hover.tr||hover.g0){const t=SNAPN[hover.kind]||'';
+        if(tool.type==='dim'||tool.type==='note'||tool.type==='doc'||tool.type==='notch'||hover.tr||hover.g0){const t=SNAPN[hover.kind]||'';
           ox.font='600 11px system-ui,sans-serif';ox.textAlign='left';ox.textBaseline='middle';ox.lineJoin='round';
           ox.lineWidth=3;ox.strokeStyle='rgba(0,0,0,.75)';ox.strokeText(t,h[0]+11,h[1]+14);
           ox.fillStyle='#fff';ox.fillText(t,h[0]+11,h[1]+14)}}}}
@@ -1565,12 +1633,21 @@ function drawOv(){
     if(an.type==='dim'){drawDim(an,i);return}
     const pi=PIDX.get(an.pn), wp=L2W(pi,an.pt); if(wp[2]>clipZ) return;
     const s=w2s(wp); if(s[2]<=0) return;
-    /* 准确位置一个小点，序号往右上引出，不挡住要看的地方 */
-    /* 槽口的序号从槽的一条边上引出：槽中间要写字 */
+    if(isNote(an)){
+      /* 标注（文字 / 文件）：准确位置一个小点，编号往右上引出，不挡住要看的地方。文字标注把字写在编号旁边；
+         文件标注选中了才写文件名 */
+      const bx=s[0]+14, by=s[1]-14, t=an.type==='note'?snip(an):(on?fileLabel(an):'');
+      oLine2(s,[bx,by],an.color,1.6);oDot(s,an.color);
+      if(t) oText(bx+7,by,t,i);
+      oBadge(bx,by,i,an);
+      return}
+    /* 高亮、槽口、开洞：不编号、不写说明。准确位置留一个小圆点，点它就选中这一个（选中的大一圈、描白边）；
+       槽口、开洞的那一块本身也能点。槽口的圆点放在槽的一条边上：槽中间要写字 */
     const nt=an.type==='notch'; let s0=s;
     if(nt){const q=an.pt.slice(); q[an.g.wa]=an.box[an.g.wa+3]; const e=w2s(L2W(pi,q)); if(e[2]>0) s0=e}
-    const bx=s0[0]+14, by=s0[1]-14;
-    oLine2(s0,[bx,by],an.color,1.6);oDot(s0,an.color);
+    if(an.box){const b=an.box, q=[0,1,2,3,4,5,6,7].map(k=>w2s(L2W(pi,[b[k&1?3:0],b[k&2?4:1],b[k&4?5:2]])));
+      if(q.every(z=>z[2]>0)) hits.push({poly:hull2(q),i})}
+    oDot(s0,an.color,on?5.5:3.5,on?'#fff':null);hits.push({x:s0[0],y:s0[1],r:on?9:7,i});
     /* 槽口：长度和深度直接写在槽上，贴着开槽的那个面、顺着槽的长向（宽度不写）。字的大小跟着槽走：
        整块正好落在槽口里（宽占六成、长不超过九成），槽远了字小、近了字大，比例不变 */
     if(nt){const g=an.g, b=an.box, t='长 '+fmtD(g.L)+'  深 '+fmtD(g.Dp);
@@ -1591,18 +1668,16 @@ function drawOv(){
             q=an.pt.slice(); q[g.ax]+=sg*(far-tl/2);
       const p=planeAt(L2W(pi,q),u,w,unit,true);
       if(p.s[2]>0) oNumP(p.s,p.e1,p.e2,t,an.color)}
-    const t=(an.type==='note'||on)?snip(an):'';
-    if(t) oText(bx+7,by,t,i);
-    oBadge(bx,by,i,an);
   });
   ox.globalAlpha=1;
   if(tool) drawTool();
 }
-/* 点中了哪条标注（没有就是 -1）：先看序号和文字，都没点中再看尺寸线 ——
-   线长，不然容易盖住别的序号 */
+/* 点中了哪一条（没有就是 -1）：先看编号、文字、小圆点，再看槽口 / 开洞的那一块，都没点中再看尺寸线 ——
+   线长，不然容易盖住别的 */
 function hitBadge(cx,cy,touch){const s=touch?8:2;
-  for(let k=hits.length-1;k>=0;k--){const h=hits[k]; if(h.x1!=null) continue;
+  for(let k=hits.length-1;k>=0;k--){const h=hits[k]; if(h.x1!=null||h.poly) continue;
     if(h.w?(cx>=h.x-s&&cx<=h.x+h.w+s&&cy>=h.y-s&&cy<=h.y+h.h+s):Math.hypot(cx-h.x,cy-h.y)<=h.r+s) return h.i}
+  for(let k=hits.length-1;k>=0;k--){const h=hits[k]; if(h.poly&&inPoly2(h.poly,cx,cy)) return h.i}
   for(let k=hits.length-1;k>=0;k--){const h=hits[k]; if(h.x1==null) continue;
     const dx=h.x2-h.x1, dy=h.y2-h.y1, t=Math.max(0,Math.min(1,((cx-h.x1)*dx+(cy-h.y1)*dy)/(dx*dx+dy*dy||1)));
     if(Math.hypot(cx-h.x1-dx*t,cy-h.y1-dy*t)<=4+s) return h.i}
@@ -1685,7 +1760,6 @@ function toolBtns(){document.querySelectorAll('[data-tool]').forEach(b=>
 /* t：按钮的名字 —— dim1 单次测量 / dimc 连续测量 / hl / notch / hole / note / doc。
    ed：拿已有的一条尺寸接着做 —— place 为真是重新放它的尺寸线，否则是给连续尺寸接着加点 */
 function startTool(t,ed,place){
-  if(t==='doc'){endTool();addAnn({type:'doc'});return}
   if(tool&&tool.btn===t&&!ed){endTool();return}
   const dm=t==='dim1'||t==='dimc';
   tool={type:dm?'dim':t,btn:t,pts:[],keep:0,guide:[],gLock:-1,gS:-1,gBtn:false};
@@ -2233,6 +2307,7 @@ function toolTap(cx,cy,touch){
   endTool();
   if(T==='hl') addAnn(Object.assign({type:'hl',pt:r3(h.raw)},base));
   else if(T==='note') addAnn(Object.assign({type:'note',pt:r3(h.loc)},base));
+  else if(T==='doc') addDoc(Object.assign({pt:r3(h.loc)},base));       // 位置定了，接着选文件
   else{const an=Object.assign({type:T},base);initCut(an,p,h);addAnn(an)}
 }
 function tapAt(cx,cy,touch){
@@ -2258,7 +2333,7 @@ function hoverNow(){
   }else if(tool.type==='notch'&&tool.cut){const r=cutAt(hovXY[0],hovXY[1],false);
     hover=r?{cut:r,xy:hovXY.slice(),w:r.w,kind:r.kind}:null;
   }else{const p=pickPiece(hovXY[0],hovXY[1]);
-    if(p){const h=hitInfo(p,hovXY[0],hovXY[1],false), sn=tool.type==='note'||tool.type==='notch';
+    if(p){const h=hitInfo(p,hovXY[0],hovXY[1],false), sn=tool.type==='note'||tool.type==='doc'||tool.type==='notch';
       hover={w:L2W(p.pi,sn?h.loc:h.raw),kind:sn?h.snap:'f'}}
     else hover=null}
   draw(false);
@@ -2284,27 +2359,30 @@ function openAnn(){
 }
 function closeAnn(){document.body.classList.remove('ann-open');tog2.setAttribute('aria-expanded','false');cap()}
 function addAnn(o){
-  const an=norm(Object.assign({id:nid(),t:Date.now()},o,o.type==='doc'?{}:{view:getView()}));
+  const an=norm(Object.assign({id:nid(),t:Date.now()},o,(isNote(o)&&typeof o.pn!=='string')?{}:{view:getView()}));
   if(!an) return;
   A.push(an);sel=A.length-1;changed(true);openAnn();
   const box=document.querySelector('#annList .an.sel');
   if(box){if(box.scrollIntoView)box.scrollIntoView({block:'nearest'});
     const ta=box.querySelector('textarea');if(ta&&!NARROW.matches)ta.focus()}
 }
-/* fly：转到那条标注的画面；资料条目没有位置，改成打开它的第一个附件
+/* fly：转到那一条的画面；没有位置的文件标注，改成打开它的第一个文件
    （quiet：一条条往下翻的时候不要自己弹出来） */
 function select(i,fly,quiet){
   sel=i;renderList();cap();
   if(i>=0){
     const an=A[i];
     if(fly){if(an.view)applyView(an.view,an);
-      else if(an.type==='doc'){if(an.media.length&&!quiet)openMedia(an.media[0])}
+      else if(!placed(an)){if(an.media.length&&!quiet)openMedia(an.media[0])}
       else focusOn(an)}
     const box=document.querySelector('#annList .an.sel');if(box&&box.scrollIntoView)box.scrollIntoView({block:'nearest'});
   }
   draw(false);
 }
-function step(d){if(A.length)select((Math.max(sel,0)+d+A.length)%A.length,true,true)}
+/* 上一条 / 下一条：在同一类里翻（标注翻标注，画上去的东西翻画上去的东西） */
+function step(d){if(!A.length) return;
+  const ids=sel>=0?sameGroup(sel):A.map((_,k)=>k), k=ids.indexOf(sel);
+  select(ids[((k<0?0:k+d)%ids.length+ids.length)%ids.length],true,true)}
 /* ---------- 撤销 / 重做 ---------- */
 /* 每改一次，把改之前的整份标注压进撤销栈（最多 100 步）。附件的内容不复制，只记着是
    哪几个 —— 一张照片几百 KB，每步都抄一份吃不消。同一处连着改（打字、连点数字框）
@@ -2366,8 +2444,8 @@ function changed(structural,key){
   if(structural!==false)renderList();else if(sel>=0)fillRow(sel);
   counts();cap();autosave();state();undoBtns();draw(false);
 }
-function counts(){
-  const n=A.length, o=A.filter(a=>!a.done).length;
+function counts(){                       // 只数标注（文字、文件）
+  const N=A.filter(isNote), n=N.length, o=N.filter(a=>!a.done).length;
   document.getElementById('annN').textContent=n?(o===n?n+' 条':n+' 条，'+o+' 条没处理'):'';
   const b=document.getElementById('tog2n');b.textContent=n||'';b.hidden=!n;
 }
@@ -2375,7 +2453,7 @@ function counts(){
 /* ---------- 列表与编辑 ---------- */
 function tname(an){return an.type==='dim'&&an.chain?'连续尺寸':TYPES[an.type]}
 function where(an){
-  if(an.type==='doc') return '';
+  if(!placed(an)) return '';
   if(an.type==='dim'){const s=Array.from(new Set(an.pts.map(q=>q.pn)));
     return s.length>2?s[0]+' 等 '+s.length+' 块板':s.join(' → ')}
   const p=pieceOf(an);return an.pn+(p?' · '+D.kinds[p.ki]+(p.lab?' '+p.lab:''):'');
@@ -2389,16 +2467,22 @@ function sub(an){
   if(an.type==='dim'){const q=dimGeo(an,false); if(!q) return '原来那块板找不到了';
     const k=axW(PIDX.get(an.pts[0].pn),an.dir), d=k>=0?' · '+AXL[k]+' 向':an.dir?' · 斜向':'';
     return (an.chain?an.pts.length+' 个点，总长 ':'')+fmtD(q.len)+' mm'+d}
-  if(an.type==='doc') return an.media.length?an.media.length+' 个附件':'还没有附件';
+  if(an.type==='doc') return an.media.length?an.media.length+' 个文件':'还没有文件';
   return '';
 }
 function fillRow(i){
   const an=A[i], box=document.querySelector('#annList .an[data-i="'+i+'"]'); if(!an||!box) return;
-  const first=(an.text||'').split('\n')[0].trim(), w=where(an), s=sub(an);
-  box.querySelector('.t1').textContent=first||(tname(an)+(w?' · '+w:''));
-  box.querySelector('.t2').textContent=(first?[tname(an),w,s]:[s]).filter(Boolean).join(' · ');
+  const w=where(an), s=sub(an); let t1, t2;
+  if(an.type==='note'){t1=an.text.split('\n')[0].trim()||'文字（还没写）';t2=w}
+  else if(an.type==='doc'){t1=an.media.length?an.media.map(m=>m.n||'未命名').join('、'):'文件（还没有）';t2=[s,w].filter(Boolean).join(' · ')}
+  else{t1=tname(an)+(w?' · '+w:'');t2=s}
+  box.querySelector('.t1').textContent=t1;
+  box.querySelector('.t2').textContent=t2;
   box.classList.toggle('done',an.done);
   const n=box.querySelector('.num');n.style.background=an.color;n.style.color=ink(an.color);
+  /* 文字里的网址：在这一条下面列出来，点了新开一页 */
+  const L=box.querySelector('.anL'), ls=an.type==='note'?linksOf(an.text):[];
+  L.textContent='';L.hidden=!ls.length;ls.forEach(p=>L.appendChild(linkEl(p)));
 }
 const MK_NAME={link:'链接',vid:'视频',aud:'录音',file:'文件'};
 function fillMedia(i,host,edit){
@@ -2439,7 +2523,7 @@ async function addFiles(an,files){
       let d;
       if(/^image\/(jpeg|png|webp|bmp|heic|heif)$/.test(f.type)) d=await shrink(f);
       else{
-        if(f.size>15e6){toast('「'+f.name+'」有 '+Math.round(f.size/1e6)+' MB，太大放不进文件；请传到网盘，再用「加链接」');continue}
+        if(f.size>15e6){toast('「'+f.name+'」有 '+Math.round(f.size/1e6)+' MB，太大放不进文件；请传到网盘，再用文字标注写上网址');continue}
         d=await readURL(f);
       }
       const m=normMedia({n:f.name,d});
@@ -2452,8 +2536,9 @@ function pickFiles(an,acc){const f=document.getElementById('fMedia');f.accept=ac
   f.onchange=()=>addFiles(an,Array.from(f.files));f.click()}
 function editor(an,i){
   const e=el('div','anE'), row=()=>{const r=el('div','row');e.appendChild(r);return r};
-  const ta=el('textarea');ta.value=an.text;ta.placeholder=PH[an.type];ta.setAttribute('aria-label','说明');
-  ta.oninput=()=>{an.text=ta.value;changed(false,'text:'+an.id)};e.appendChild(ta);
+  /* 字只有文字标注能写；测量、高亮、槽口、开洞不带说明（要说明就另外加一条文字标注） */
+  if(an.type==='note'){const ta=el('textarea');ta.value=an.text;ta.placeholder=PH.note;ta.setAttribute('aria-label','文字');
+    ta.oninput=()=>{an.text=ta.value;changed(false,'text:'+an.id)};e.appendChild(ta)}
   if(an.type==='notch'||an.type==='hole'){
     const g=an.g, live=!!pieceOf(an);
     if(an.type==='hole'){const r=row();
@@ -2511,18 +2596,13 @@ function editor(an,i){
   const dl=el('label','dn'), dc=el('input');dc.type='checkbox';dc.checked=an.done;
   dc.onchange=()=>{an.done=dc.checked;changed(false)};dl.appendChild(dc);dl.appendChild(document.createTextNode('已处理'));
   cr.appendChild(dl);
-  const ar=row(), b1=el('button',null,'加照片'), b2=el('button',null,'加文件'), b3=el('button',null,'加链接');
-  ar.appendChild(b1);ar.appendChild(b2);ar.appendChild(b3);
-  const lk=el('div','lk');lk.hidden=true;e.appendChild(lk);
-  const u=el('input');u.type='text';u.placeholder='网址，或和这个 HTML 放一起的文件名';u.setAttribute('aria-label','链接地址');
-  const nm=el('input');nm.type='text';nm.placeholder='显示的名称（可不填）';nm.setAttribute('aria-label','链接名称');
-  const ok=el('button',null,'添加');lk.appendChild(u);lk.appendChild(nm);lk.appendChild(ok);
-  b1.onclick=()=>pickFiles(an,'image/*');b2.onclick=()=>pickFiles(an,'');
-  b3.onclick=()=>{lk.hidden=!lk.hidden;if(!lk.hidden)u.focus()};
-  ok.onclick=()=>{const m=normMedia({k:'link',u:u.value,n:nm.value.trim()});
-    if(!m){toast('请填网址（http 开头）或文件名');return}an.media.push(m);changed(true)};
+  /* 文件只有文件标注能挂：照片、PDF、视频……（网址写在文字标注里） */
+  if(an.type==='doc'){const ar=row(), b1=el('button',null,'加照片'), b2=el('button',null,'加文件');
+    b2.title='PDF、视频、图纸……什么文件都行';
+    ar.appendChild(b1);ar.appendChild(b2);
+    b1.onclick=()=>pickFiles(an,'image/*');b2.onclick=()=>pickFiles(an,'')}
   const vr=row();
-  if(an.type!=='doc'){const g1=el('button',null,'回到视角'), g2=el('button',null,'更新视角');
+  if(placed(an)){const g1=el('button',null,'回到视角'), g2=el('button',null,'更新视角');
     g1.onclick=()=>{an.view?applyView(an.view,an):focusOn(an)};
     g2.onclick=()=>{an.view=getView();changed(false);toast('这一条的视角已改成现在的画面')};
     vr.appendChild(g1);vr.appendChild(g2)}
@@ -2535,19 +2615,25 @@ function editor(an,i){
 function renderList(){
   const host=document.getElementById('annList');host.textContent='';
   if(!A.length)host.appendChild(el('div','mini','还没有标注。点上面的按钮，再到模型上点位置。'));
-  A.forEach((an,i)=>{
+  /* 先是标注（文字、文件），带编号；后面一组是画在模型上的东西（测量、高亮、槽口、开洞），不编号，
+     前头只有一个色块 */
+  const one=i=>{const an=A[i], nt=isNote(an);
     const on=i===sel, box=el('div','an'+(on?' sel':''));box.dataset.i=i;
     const h=el('div','anH'), t=el('div','anT');
     h.tabIndex=0;h.setAttribute('role','button');h.setAttribute('aria-expanded',on?'true':'false');
-    h.appendChild(el('span','num',String(i+1)));t.appendChild(el('div','t1'));t.appendChild(el('div','t2 mini'));h.appendChild(t);
+    h.appendChild(el('span',nt?'num':'num dotm',nt?String(numOf(i)):''));
+    t.appendChild(el('div','t1'));t.appendChild(el('div','t2 mini'));h.appendChild(t);
     const go=()=>{if(i===sel){select(-1);return}select(i,true);if(NARROW.matches)closeAnn()};
     h.onclick=go;h.onkeydown=ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();go()}};
     box.appendChild(h);
+    box.appendChild(el('div','anL'));
     const m=el('div','anM');box.appendChild(m);
     host.appendChild(box);
     fillRow(i);fillMedia(i,m,on);
-    if(on)box.appendChild(editor(an,i));
-  });
+    if(on)box.appendChild(editor(an,i))};
+  const N=[], M=[]; A.forEach((an,i)=>(isNote(an)?N:M).push(i));
+  N.forEach(one);
+  if(M.length){host.appendChild(el('div','anG mini','测量 · 高亮 · 槽口 · 开洞（不编号）'));M.forEach(one)}
 }
 /* 手机上列表抽屉收起时，选中的那条在底部出一张小卡片：说明、附件、上一条 / 下一条 */
 function cap(){
@@ -2555,13 +2641,13 @@ function cap(){
   const show=sel>=0&&!tool&&NARROW.matches&&!document.body.classList.contains('ann-open');
   c.hidden=!show;document.body.classList.toggle('has-cap',show);
   if(!show) return;
-  const an=A[sel], n=document.getElementById('capN');
-  n.textContent=sel+1;n.style.background=an.color;n.style.color=ink(an.color);
+  const an=A[sel], n=document.getElementById('capN'), ids=sameGroup(sel);
+  n.textContent=isNote(an)?numOf(sel):'';n.style.background=an.color;n.style.color=ink(an.color);
   document.getElementById('capT').textContent=[tname(an),where(an)].filter(Boolean).join(' · ');
   document.getElementById('capS').textContent=sub(an);
-  document.getElementById('capX').textContent=an.text;
+  putText(document.getElementById('capX'),an.text);
   fillMedia(sel,document.getElementById('capM'),false);
-  document.getElementById('capI').textContent=(sel+1)+' / '+A.length;
+  document.getElementById('capI').textContent=(ids.indexOf(sel)+1)+' / '+ids.length;
 }
 
 /* ---------- 保存 / 导出 / 导入 ---------- */
@@ -2577,7 +2663,9 @@ function state(){
   if(t)s.appendChild(document.createTextNode(t));
   if(fromDraft){const b=el('button','inl','改回文件里的');b.onclick=resetDraft;s.appendChild(b)}
 }
-function loadItems(items){A=(Array.isArray(items)?items:[]).map(norm).filter(Boolean);A.forEach(relink)}
+function loadItems(items){const have=new Set();A=[];
+  (Array.isArray(items)?items:[]).forEach(o=>normAll(o).forEach(an=>{if(!have.has(an.id)){have.add(an.id);A.push(an)}}));
+  A.forEach(relink)}
 function resetDraft(){
   try{localStorage.removeItem(LSKEY)}catch(_){}
   if(tool)endTool();
@@ -2599,16 +2687,22 @@ function download(name,text,type){
   a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();
   setTimeout(()=>URL.revokeObjectURL(u),30000);
 }
+/* 清单的文字版：先是编了号的标注，后面是画在模型上的东西（不编号） */
 function listText(){
-  return (D.job?D.job+' ':'')+'框架模型标注（共 '+A.length+' 条）\n'+A.map((an,i)=>{
-    let l=(i+1)+'. 【'+tname(an)+'】'+[where(an),sub(an)].filter(Boolean).join('，')+
-      (an.text?'：'+an.text.replace(/\s*\n\s*/g,' '):'')+(an.done?'（已处理）':'');
+  const N=[], M=[]; A.forEach((an,i)=>(isNote(an)?N:M).push(i));
+  let s=(D.job?D.job+' ':'')+'框架模型标注（共 '+N.length+' 条）';
+  N.forEach(i=>{const an=A[i], w=where(an);
+    s+='\n'+numOf(i)+'. 【'+tname(an)+'】'+(w?w+'：':'')+
+      (an.type==='note'?an.text.replace(/\s*\n\s*/g,' '):an.media.length?an.media.map(m=>m.n||'未命名').join('、'):'还没有文件')+
+      (an.done?'（已处理）':'')});
+  if(M.length) s+='\n测量、高亮、槽口、开洞（'+M.length+' 处）';
+  M.forEach(i=>{const an=A[i];
+    s+='\n· 【'+tname(an)+'】'+[where(an),sub(an)].filter(Boolean).join('，')+(an.done?'（已处理）':'');
     if(an.type==='dim'&&an.chain){const q=dimGeo(an,false);
       if(q){const o=q.ord;
-        l+='\n   相对：'+o.slice(1).map((k,j)=>fmtD(q.val[k]-q.val[o[j]])).join(' / ')+
-           '\n   绝对：'+o.map(k=>fmtD(Math.abs(q.val[k]))).join(' / ')}}
-    an.media.forEach(m=>{l+='\n   '+(m.k==='link'?'链接 '+m.u:'附件 '+(m.n||'未命名'))});
-    return l}).join('\n');
+        s+='\n   相对：'+o.slice(1).map((k,j)=>fmtD(q.val[k]-q.val[o[j]])).join(' / ')+
+           '\n   绝对：'+o.map(k=>fmtD(Math.abs(q.val[k]))).join(' / ')}}});
+  return s;
 }
 function importText(s){
   let o=null;
@@ -2616,7 +2710,7 @@ function importText(s){
   const items=Array.isArray(o)?o:(o&&o.items);
   if(!Array.isArray(items)){toast('这个文件里没有找到标注');return}
   const have=new Set(A.map(a=>a.id));let n=0;
-  items.forEach(x=>{const an=norm(x);if(an&&!have.has(an.id)){relink(an);A.push(an);have.add(an.id);n++}});
+  items.forEach(x=>normAll(x).forEach(an=>{if(!have.has(an.id)){relink(an);A.push(an);have.add(an.id);n++}}));
   if(n)changed(true);
   const other=o&&o.job&&D.job&&o.job!==D.job;
   toast(n?'导入了 '+n+' 条标注'+(other?'。注意：这份标注是 '+o.job+' 的，和当前模型不是同一个工程，位置可能对不上':'')
