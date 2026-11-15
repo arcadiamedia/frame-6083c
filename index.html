@@ -206,13 +206,25 @@ button.del{color:var(--bad)}
 button.inl{flex:none;min-width:0;padding:2px 8px;margin-left:6px}
 button:disabled,input:disabled{opacity:.5;cursor:default}
 #tog2{display:none}
-/* 浮在屏幕上的两个开关（电脑上在右边那一列的左边，手机上在左上第三、第四个）：
-   动态视角 —— 亮着 = 点清单里的一条就回到做它时的视角；说明的总开关 —— 亮着 = 有信息开着 */
+/* 浮在屏幕上的三个开关（电脑上在右边那一列的左边，手机上在左上第三、四、五个）：
+   只读 —— 亮着 = 只能看，不能改；动态视角 —— 亮着 = 点清单里的一条就回到做它时的视角；
+   说明的总开关 —— 亮着 = 有信息开着 */
 #togs{position:fixed;top:12px;right:316px;z-index:3;display:flex;gap:8px;pointer-events:none}
 #togs>button{position:relative;pointer-events:auto;display:flex;align-items:center;gap:6px;height:34px;min-width:0;flex:none;
   padding:0 11px;font-size:12px;color:var(--dim)}
 #togs>button.on{background:color-mix(in srgb,var(--panel) 92%,transparent);color:var(--acc);border-color:var(--acc)}   /* 亮着：描金边、金字，不整块涂黄 */
 #togs>button[hidden]{display:none}
+/* 只读：做东西的、改东西的都收起来（.eo = 只在可编辑时才有的） */
+body.ro .eo{display:none!important}
+/* 分享：给对方可编辑的一份，还是只读的一份 */
+#shareBox{margin-top:6px;padding:2px 8px 8px;border:1px solid var(--line);border-radius:8px;background:#201d17}
+#shareBox[hidden]{display:none}
+#shareBox .sh{display:flex;align-items:center;gap:6px;margin-top:6px}
+#shareBox .sh b{flex:none;width:48px;font-size:12px}
+#shareBox .mini{margin-top:6px;line-height:1.5}
+/* 只读时右下角那一块：只是看 */
+.anV .vT{margin-top:8px;font-size:13px;font-weight:600;overflow-wrap:anywhere}
+.anV .vX{margin-top:6px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;line-height:1.5}
 #tog2n{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;
   background:var(--acc);color:#1a1509;font-size:10px;font-weight:700;line-height:18px;text-align:center}
 #cap .capH{display:flex;align-items:center;gap:8px}
@@ -257,9 +269,9 @@ body.side-open #tog .i-x{display:inline}
   #infoBody{max-height:calc(100vh - 48px);max-height:calc(100dvh - 48px)}
   #tog2{display:flex;align-items:center;justify-content:center;top:12px;left:64px;z-index:3;
     width:44px;height:44px;min-width:0;flex:none;padding:0}
-  #togs{left:116px;right:auto;flex-direction:row-reverse}            /* 说明的开关还在第三个，动态视角排它后面 */
+  #togs{left:116px;right:auto;flex-direction:row-reverse}            /* 说明的开关还在第三个，动态视角、只读排它后面 */
   #togs>button{width:44px;height:44px;padding:0;justify-content:center}
-  #togIt,#togVt{display:none}
+  #togIt,#togVt,#togRt{display:none}
   #ann{display:none;top:64px;left:12px;width:min(320px,calc(100vw - 24px));
     max-height:calc(100vh - 76px);max-height:calc(100dvh - 76px);z-index:2}
   body.ann-open #ann{display:flex}
@@ -305,7 +317,7 @@ body.side-open #tog .i-x{display:inline}
 
 <button class="pane" id="tog" type="button" aria-label="显示/隐藏侧栏" aria-controls="side" aria-expanded="false"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path class="i-menu" d="M4 7h16M4 12h16M4 17h16"/><path class="i-x" d="M6 6l12 12M18 6L6 18"/></svg></button>
 <button class="pane" id="tog2" type="button" aria-label="显示/隐藏标注" aria-controls="ann" aria-expanded="false"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 21V4M6 4h11l-2.5 4 2.5 4H6"/></svg><span id="tog2n" hidden></span></button>
-<div id="togs"><button class="pane" id="togV" type="button"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 01-14.2 5M4 12a8 8 0 0114.2-5"/><path d="M18.5 3v4h-4M5.5 21v-4h4"/></svg><span id="togVt">动态视角</span></button><button class="pane" id="togI" type="button" hidden><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="7.5" r=".7" fill="currentColor"/></svg><span id="togIt"></span></button></div>
+<div id="togs"><button class="pane" id="togR" type="button"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg><span id="togRt">只读</span></button><button class="pane" id="togV" type="button"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 01-14.2 5M4 12a8 8 0 0114.2-5"/><path d="M18.5 3v4h-4M5.5 21v-4h4"/></svg><span id="togVt">动态视角</span></button><button class="pane" id="togI" type="button" hidden><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="7.5" r=".7" fill="currentColor"/></svg><span id="togIt"></span></button></div>
 
 <div class="pane" id="side">
   <h1>6083C</h1>
@@ -316,7 +328,7 @@ body.side-open #tog .i-x{display:inline}
     <button data-view="top" id="bTop" class="on">俯视</button><button id="bProj" class="on">正交</button>
   </div>
   <div id="views"></div>
-  <div class="row"><button data-tool="view" id="bView" title="在模型上点三个点：原点、X 轴、Y 轴，面朝这个平面看过去">＋ 三点定义视角</button></div>
+  <div class="row eo"><button data-tool="view" id="bView" title="在模型上点三个点：原点、X 轴、Y 轴，面朝这个平面看过去">＋ 三点定义视角</button></div>
 
   <h2>楼层</h2><div id="lvs"></div>
   <h2>构件类型</h2><div id="kds"></div>
@@ -327,23 +339,24 @@ body.side-open #tog .i-x{display:inline}
 
 <div id="rcol">
 <div class="pane" id="ann">
-  <div id="annHead" role="button" tabindex="0" aria-expanded="true" aria-controls="annBody"><h1>标注 <span class="mini" id="annN"></span></h1><button id="bUndo" class="ic" type="button" title="撤销（Ctrl+Z）" aria-label="撤销" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 010 11H11"/></svg></button><button id="bRedo" class="ic" type="button" title="重做（Ctrl+Shift+Z）" aria-label="重做" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 000 11H13"/></svg></button><svg id="annFold" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></div>
+  <div id="annHead" role="button" tabindex="0" aria-expanded="true" aria-controls="annBody"><h1>标注 <span class="mini" id="annN"></span></h1><button id="bUndo" class="ic eo" type="button" title="撤销（Ctrl+Z）" aria-label="撤销" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 010 11H11"/></svg></button><button id="bRedo" class="ic eo" type="button" title="重做（Ctrl+Shift+Z）" aria-label="重做" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 000 11H13"/></svg></button><svg id="annFold" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></div>
   <div id="annBody">
-    <div class="row">
+    <div class="row eo">
       <button data-tool="note">标注</button><button data-tool="hl">高亮构件</button>
     </div>
-    <div class="row">
+    <div class="row eo">
       <button data-tool="notch">槽口</button><button data-tool="hole">开洞</button>
     </div>
-    <div class="row">
+    <div class="row eo">
       <button data-tool="dim1">单次测量</button><button data-tool="dimc">连续测量</button>
     </div>
-    <div class="row"><button id="bGrp" type="button">＋ 新建群组</button></div>
+    <div class="row eo"><button id="bGrp" type="button">＋ 新建群组</button></div>
     <div id="annList"></div>
     <div class="row">
-      <button id="bSave">保存 HTML</button><button id="bShare" hidden>分享</button><button id="bCopy">复制清单</button>
+      <button id="bSave">保存 HTML</button><button id="bShare" type="button" aria-expanded="false" aria-controls="shareBox">分享</button><button id="bCopy">复制清单</button>
     </div>
-    <div class="row">
+    <div id="shareBox" hidden></div>
+    <div class="row eo">
       <button id="bExp">导出标注</button><button id="bImp">导入标注</button>
     </div>
     <div class="mini" id="annState"></div>
@@ -357,7 +370,7 @@ body.side-open #tog .i-x{display:inline}
   <div class="mini" id="capS"></div>
   <div id="capX"></div>
   <div class="anM" id="capM"></div>
-  <div class="row"><button id="capP">上一条</button><span class="mini" id="capI"></span><button id="capNx">下一条</button><button id="capE">编辑</button></div>
+  <div class="row"><button id="capP">上一条</button><span class="mini" id="capI"></span><button id="capNx">下一条</button><button id="capE" class="eo">编辑</button></div>
 </div>
 <div class="pane" id="ed" hidden></div>
 <div id="lb" hidden><button id="lbX" type="button" aria-label="关闭" title="关闭"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div id="lbC"></div><div id="lbT"></div></div>
@@ -1079,6 +1092,21 @@ let ANN0={};
 try{ANN0=JSON.parse(document.getElementById('ann0').textContent||'{}')||{};}catch(_){ANN0={};}
 if(Array.isArray(ANN0)) ANN0={items:ANN0};
 const LSKEY='fpann:'+(D.job||'')+':'+(ANN0.rev||'0');
+/* 只读。用户（2026-11-16）：「加入一个查看模式，就是不能编辑。但是那些显示图层的操作可以做，比如改颜色、删除这些
+   编辑做不了。我想在手机上查看的时候，界面能够尽量简单一些，因为在手机上编辑说实话也是比较费劲。我现在想暂时提供
+   一个只读模式过渡。界面上加一个按钮来控制可编辑还是只读。分享的时候有两个选项：一个是可编辑，另一个是不可编辑。」
+   RO：现在是不是只读。只读时没有的：做东西的六个按钮、新建群组、三点定义视角、撤销重做、多选（方格、Ctrl 点）、
+   群组和视角的改名 / 删除、拖进群组、导入导出标注、右下角的设置（换成只是看的一块：标题、说明、文件）。
+   还有的，都是看：点清单 / 点模型上的东西看它，显示 / 隐藏（眼睛）、折叠、楼层、构件类型、爆炸、视角、剖切、
+   说明的开关、动态视角，保存 / 分享 / 复制清单。
+   LOCK：这一份规定了只读 —— 分享时选了「只读」的文件（标注那一块里带着 ro）或者链接（网址带 view）。那把锁
+   一直亮着、点不开。没规定的，锁由用的人自己开关，记在这个浏览器里（fp.ro）。
+   这只是界面上不给改，不是加密：懂行的人改网址、改文件还是进得了编辑；不过网上那一份，别人怎么改也只存在他
+   自己的浏览器里，动不到原件。 */
+/* 网址里带不带 view（?view、?view=1、&view=1、#view 都算；viewer、view=0 不算） */
+function viewURL(u){return /(^|[?&#])view(=1)?(?=[&#]|$)/.test(u)}
+const LOCK=!!ANN0.ro||(()=>{try{return viewURL(location.search+location.hash)}catch(_){return false}})();
+let RO=LOCK; if(!RO)try{RO=localStorage.getItem('fp.ro')==='1'}catch(_){}
 
 let A=[], sel=-1, tool=null, hover=null, dirty=false, fromDraft=false, lsOK=true,
     MVP=null, hits=[];
@@ -1413,6 +1441,79 @@ function cutBox(an){
   an.pt=r3(pt);
 }
 
+/* ----- 槽能跨木料 ----- */
+/* 用户（2026-11-16）：「现在开槽不能跨板件。比如我在 VTP 上开槽，从一个 VTP 延伸到另一个，它不能贯穿，光标拉不过去。」
+   原先槽的长度卡在起点那根木料里。现在槽还是记在起点那根木料上（pn / mi、起点 s0、朝哪头 sg、长 L），只是长度
+   可以出它的头，一直开到接在它头上的木料里去 —— 哪些木料算「接着」见 cutRun。 */
+/* 两块板的轴对不对得齐（同一块板，或者转了 90° 的整数倍）：对得齐，一块板里的盒子换到另一块里还是盒子 */
+const ALN=new Map();
+function aligned(pj,pi){ if(pj===pi) return true;
+  const key=pj*100000+pi; let v=ALN.get(key);
+  if(v===undefined){const u=D2L(pi,dirW(pj,AX[0])), L=Math.hypot(u[0],u[1])||1;
+    v=Math.max(Math.abs(u[0]),Math.abs(u[1]))/L>.9995;ALN.set(key,v)}
+  return v}
+/* 木料 q 的外形，写成板 pi 里的坐标（同一块板就是它自己的）。两块板的轴对不齐（斜着的）给 null */
+function boxIn(q,pi){
+  const b=boxOf(q); if(q.pi===pi) return b; if(!aligned(q.pi,pi)) return null;
+  const a=W2L0(pi,L2W0(q.pi,b.lo)), c=W2L0(pi,L2W0(q.pi,b.hi));
+  return {lo:[0,1,2].map(k=>Math.min(a[k],c[k])),hi:[0,1,2].map(k=>Math.max(a[k],c[k]))}}
+/* 槽顺着木料 P 的 k 轴开，一路能开到哪：P 自己，加上一根接一根接在它头上的木料 —— 开槽的那个面（na / ns）和它
+   齐平（差不到 1.5，各自取整留下的 1 毫米不算）、槽的中心线压在它身上、头尾挨着（缝不到 2）。别的板上的木料
+   也算，只要两块板的轴对得齐（数值都按没爆炸的位置算）。
+   l：起点（P 那块板里的坐标）；vis：只算显示着的木料（做的时候 —— 藏起来的不该被开到）。
+   返回 lo / hi（P 那块板里 k 轴上的范围）和 ps：这一路上的木料，各带着自己在 P 那块板里的外形 b，P 打头 */
+function cutRun(P,k,na,ns,l,vis){
+  const pi=P.pi, b=boxOf(P), wa=3-na-k, f0=ns>0?b.hi[na]:b.lo[na], ps=[{p:P,b}], pool=[];
+  let lo=b.lo[k], hi=b.hi[k];
+  pieces.forEach(q=>{ if(q===P||(vis&&!(showLv.has(q.lv)&&showKd.has(q.ki)))) return;
+    const qb=boxIn(q,pi); if(!qb) return;
+    if(Math.abs((ns>0?qb.hi[na]:qb.lo[na])-f0)>1.5||l[wa]<qb.lo[wa]-.5||l[wa]>qb.hi[wa]+.5) return;
+    pool.push({p:q,b:qb})});
+  for(let more=true;more;){more=false;
+    for(let i=pool.length-1;i>=0;i--){const qb=pool[i].b;
+      if(qb.lo[k]>hi+2||qb.hi[k]<lo-2) continue;
+      lo=Math.min(lo,qb.lo[k]);hi=Math.max(hi,qb.hi[k]);ps.push(pool[i]);pool.splice(i,1);more=true}}
+  return {lo,hi,ps};
+}
+/* 做槽的时候用的那一份：同一根木料、同一个面、同一条线上的，定了起点以后只找一遍（c 是 tool.cut） */
+function cutRunOf(c,P,k,na,ns,l){
+  const key=[P.pi,P.mi,k,na,ns,Math.round(l[3-na-k]*2)].join(':');
+  if(!c.runs)c.runs={};
+  return c.runs[key]||(c.runs[key]=cutRun(P,k,na,ns,l,true));
+}
+/* 这条槽开在哪几根木料上：它自己那根打头；槽长出了它的头，接着开过去的那几根顺着槽的方向排在后面。
+   每一项：p 木料、b 它的外形（槽那块板里的坐标）、lo / hi 槽在它身上的那一段（长向）。
+   槽没出自己那根的头就不去找别的；找过的记着（盒子变了才重找） */
+const CUTP=new WeakMap();
+function cutParts(an){
+  const P=an.type==='notch'?pieceOf(an):null; if(!P) return [];
+  const g=an.g, b=boxOf(P), k=g.ax, lo=an.box[k], hi=an.box[k+3],
+        me={p:P,b,lo:Math.max(lo,b.lo[k]),hi:Math.min(hi,b.hi[k])};
+  if(lo>=b.lo[k]-.5&&hi<=b.hi[k]+.5) return [me];
+  const key=an.pn+':'+an.mi+':'+an.box.join(','), c=CUTP.get(an);
+  if(c&&c.key===key) return c.r;
+  const l=[0,0,0]; l[k]=b.lo[k]+g.s0; l[g.wa]=b.lo[g.wa]+(num(g.o0)?g.o0:g.off); l[g.na]=g.ns>0?b.hi[g.na]:b.lo[g.na];
+  const r=cutRun(P,k,g.na,g.ns,l,false).ps.filter(x=>x.p!==P)
+    .map(x=>({p:x.p,b:x.b,lo:Math.max(lo,x.b.lo[k]),hi:Math.min(hi,x.b.hi[k])})).filter(x=>x.hi-x.lo>.5)
+    .sort((x,y)=>g.sg>0?x.b.lo[k]-y.b.lo[k]:y.b.hi[k]-x.b.hi[k]);
+  r.unshift(me);CUTP.set(an,{key,r});return r;
+}
+/* 爆炸开的时候，跨了板的槽一块板一段、各跟着自己那块板走：每段在哪块板（pi）、那块板里的盒子（b，六个数）。
+   没爆炸（各块板都在原位，画一整块就行）、没跨到别的板上：null */
+function cutSegs(an){
+  if(an.type!=='notch'||!(expK>0)) return null;
+  const ps=cutParts(an), pi=PIDX.get(an.pn); if(ps.length<2||ps.every(x=>x.p.pi===pi)) return null;
+  const k=an.g.ax, by=new Map();
+  ps.forEach(x=>{const q=by.get(x.p.pi)||{pi:x.p.pi,lo:1e18,hi:-1e18};
+    q.lo=Math.min(q.lo,x.lo);q.hi=Math.max(q.hi,x.hi);by.set(x.p.pi,q)});
+  const L=Array.from(by.values()).sort((x,y)=>x.lo-y.lo);
+  L[0].lo=an.box[k];L[L.length-1].hi=an.box[k+3];              // 两头出了木料的那一截，归最挨着的那一段
+  return L.map(q=>{const a=an.box.slice(0,3), c=an.box.slice(3);a[k]=q.lo;c[k]=q.hi;
+    if(q.pi===pi) return {pi,b:a.concat(c)};
+    const u=W2L0(q.pi,L2W0(pi,a)), v=W2L0(q.pi,L2W0(pi,c));
+    return {pi:q.pi,b:[0,1,2].map(j=>Math.min(u[j],v[j])).concat([0,1,2].map(j=>Math.max(u[j],v[j])))}});
+}
+
 /* ---------- 尺寸 ---------- */
 /* 一条尺寸 = 一串测点 pts（各自记着板号和板内坐标）+ 量的方向 dir + 尺寸线放在哪（ov / off）。
    dir：量的方向，记成第一个点所在那块板的局部方向（板挪了它跟着走）；做的时候吸的是模型的
@@ -1514,7 +1615,8 @@ function rebuildMarks(){
           const o=[0,1,2].filter(k=>k!==g.na), c0=(b[o[0]]+b[o[0]+3])/2, c1=(b[o[1]]+b[o[1]+3])/2, ring=[];
           for(let k=0;k<24;k++){const t=k/24*6.283185307;ring.push([c0+Math.cos(t)*g.d/2,c1+Math.sin(t)*g.d/2])}
           mkPrism(pi,ring,b[g.na]-e,b[g.na+3]+e,g.na,col,.7*dk,false,la);
-        }else mkPrism(pi,[[b[0]-e,b[2]-e],[b[3]+e,b[2]-e],[b[3]+e,b[5]+e],[b[0]-e,b[5]+e]],b[1]-e,b[4]+e,1,col,.62*dk,true,la);
+        }else (cutSegs(an)||[{pi,b}]).forEach(sg=>{const b=sg.b;        // 跨了板的槽，爆炸开的时候一块板一段
+          mkPrism(sg.pi,[[b[0]-e,b[2]-e],[b[3]+e,b[2]-e],[b[3]+e,b[5]+e],[b[0]-e,b[5]+e]],b[1]-e,b[4]+e,1,col,.62*dk,true,la)});
       }
     }
     r.f1=MK.pos.length/3; r.l1=MK.lpos.length/3; MK.rng.push(r);
@@ -1659,6 +1761,24 @@ function dynBtn(){
 function dynToggle(){
   dynView=!dynView;try{localStorage.setItem('fp.dyn',dynView?'1':'0')}catch(_){}
   dynBtn();toast(dynView?'动态视角开：点清单里的一条，回到做它时的视角':'动态视角关：点清单里的一条，角度不变 —— 先全览，再拉近到它');
+}
+/* 只读的开关（那把锁）：亮着 = 只读。这一份规定了只读（LOCK）就一直亮着，点了只是告诉一声 */
+function roBtn(){
+  const b=document.getElementById('togR'),
+        t=LOCK?'这一份是只读的：只能看，不能改':RO?'只读：只能看，不能改。点一下改回可编辑':'可编辑。点一下改成只读：只能看，不能改，界面也简单些';
+  b.classList.toggle('on',RO);b.setAttribute('aria-pressed',RO?'true':'false');b.title=t;b.setAttribute('aria-label',t);
+  document.body.classList.toggle('ro',RO);
+}
+function setRO(v){
+  v=!!v||LOCK; if(v===RO){roBtn();return}
+  RO=v; if(!LOCK)try{localStorage.setItem('fp.ro',RO?'1':'0')}catch(_){}
+  if(tool)endTool();
+  SEL.clear();selTouched=false;edOpen=false;gEdit='';vwEdit='';shareOpen=false;
+  roBtn();renderViews();renderList();counts();cap();state();undoBtns();renderShare();draw(false);
+}
+function roToggle(){
+  if(LOCK){toast('这一份是只读的：只能看，不能改');return}
+  setRO(!RO);toast(RO?'已改成只读：只能看，不能改。再点一下这把锁改回可编辑':'已改回可编辑');
 }
 /* 标题旁边的小圆钮 i：说明收着，点它打开 */
 function oInfo(x,y){
@@ -1984,8 +2104,9 @@ function drawOv(){
        （高亮的那根靠 tapAt 里拾取木料认）。标题、说明从槽的一条边上（槽中间要写字）/ 洞口 / 点中的那一点往右上引出 */
     const nt=an.type==='notch'; let s0=s;
     if(nt){const q=an.pt.slice(); q[an.g.wa]=an.box[an.g.wa+3]; const e=w2s(L2W(pi,q)); if(e[2]>0) s0=e}
-    if(an.box){const b=an.box, q=[0,1,2,3,4,5,6,7].map(k=>w2s(L2W(pi,[b[k&1?3:0],b[k&2?4:1],b[k&4?5:2]])));
-      if(q.every(z=>z[2]>0)) hits.push({poly:hull2(q),i})}
+    if(an.box) (cutSegs(an)||[{pi,b:an.box}]).forEach(sg=>{const b=sg.b,
+        q=[0,1,2,3,4,5,6,7].map(k=>w2s(L2W(sg.pi,[b[k&1?3:0],b[k&2?4:1],b[k&4?5:2]])));
+      if(q.every(z=>z[2]>0)) hits.push({poly:hull2(q),i})});
     oTag(s0,i,an,12);
     /* 槽口：长度和深度直接写在槽上，贴着开槽的那个面、顺着槽的长向（宽度不写）。字的大小跟着槽走：
        整块正好落在槽口里（宽占六成、长不超过九成），槽远了字小、近了字大，比例不变 */
@@ -2228,7 +2349,7 @@ function renderViews(){
   if(vwOn==='top') host.appendChild(clipBox('top','top'));
   VW.forEach(v=>{
     const on=v.id===vwOn, box=el('div','vw'+(on?' on':'')), h=el('div','vwH');box.dataset.id=v.id;
-    if(vwEdit===v.id){
+    if(!RO&&vwEdit===v.id){
       const inp=el('input');inp.type='text';inp.value=v.name;inp.maxLength=40;inp.setAttribute('aria-label','视角的名字');
       const done=ok=>{if(vwEdit!==v.id) return;vwEdit='';const s=inp.value.replace(/\s+/g,' ').trim();
         if(ok&&s&&s!==v.name){v.name=s;vwChanged()}else renderViews()};
@@ -2239,9 +2360,9 @@ function renderViews(){
       const n=el('span','vwN',v.name);n.tabIndex=0;n.setAttribute('role','button');n.title='面朝这个视角看过去';
       n.onclick=()=>vwGo(v.id);n.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();vwGo(v.id)}};
       h.appendChild(n);
-      h.appendChild(ibtn('pen','改名',()=>{vwEdit=v.id;renderViews()}));
-      h.appendChild(ibtn('x','删除这个视角（删错了按撤销）',()=>{
-        VW.splice(VW.indexOf(v),1);VR.delete(v.id);if(vwOn===v.id)vwOn='top';vwChanged()}));
+      if(!RO){h.appendChild(ibtn('pen','改名',()=>{vwEdit=v.id;renderViews()}));
+        h.appendChild(ibtn('x','删除这个视角（删错了按撤销）',()=>{
+          VW.splice(VW.indexOf(v),1);VR.delete(v.id);if(vwOn===v.id)vwOn='top';vwChanged()}))}
     }
     box.appendChild(h);
     if(on) box.appendChild(clipBox(v.id));
@@ -2265,6 +2386,7 @@ function toolBtns(){document.querySelectorAll('[data-tool]').forEach(b=>
 /* t：按钮的名字 —— dim1 单次测量 / dimc 连续测量 / hl / notch / hole / note / doc。
    ed：拿已有的一条尺寸接着做 —— place 为真是重新放它的尺寸线，否则是给连续尺寸接着加点 */
 function startTool(t,ed,place){
+  if(RO) return;                                         // 只读：不做东西
   if(tool&&tool.btn===t&&!ed){endTool();return}
   /* 去做新的：不选着画上去的那个了，勾着的也都去掉。接着做已有的那一条（重新放置、继续加点）：还选着它，
      做完它的设置又回来 */
@@ -2505,6 +2627,7 @@ function cutFace(c,o,m,sk){
 /* 鼠标在屏幕上 (cx,cy)：槽开到哪 —— p 开在哪根木料上、p1 起点（那块板的局部坐标）、na / ns 从哪个面
    开进去、ax 长度顺着它的哪根轴、sg 朝哪头、L 多长（整毫米，不开到木料外面去）、ai 是 axes 里的第几根、
    lock 方向是不是锁着、kind / w 那一头落在了什么上、在哪。
+   长度不卡在这根木料里：它头上接着别的木料（面齐平、挨着 —— 见 cutRun），就能一直拉过去，到这一路的头为止。
    朝哪根轴：和量尺寸时吸轴一个路数，在屏幕上判 —— 鼠标从点下去的地方出发，更挨着哪根轴的线，就是
    哪根（从点下去的地方算，不从吸附后的起点算：起点吸到旁边的棱上挪了几个像素，不该算成鼠标往那边
    拉过）。
@@ -2524,7 +2647,8 @@ function cutFace(c,o,m,sk){
    · 别的情况（指着空白处、别的板，或者偏到了这根木料的另一个面、后面的棱上）—— 取视线离那根轴线
      最近的那一点，也就是屏幕上从鼠标垂直落到轴线上的位置。不拿「后面那条棱上的点」去对齐：它和
      开槽的面不在一个深度上，斜着看过去齐平的位置在屏幕上差出一截，槽的那一头就不在鼠标底下了。
-   别的板上的点不理，屏幕上碰巧叠在一起而已。吸到的点要是正好和起点齐平（长度成了 0）也不要它。 */
+   别的板上的点不理，屏幕上碰巧叠在一起而已 —— 除非槽接着开过去的木料就在那块板上。吸到的点要是正好和起点
+   齐平（长度成了 0）也不要它。 */
 function cutAt(cx,cy,touch,Wt){
   const c=tool.cut; if(!c.opts) cutInit(c);
   const pi=c.p.pi, rc=cv.getBoundingClientRect(), A0=L2W(pi,c.p1), a=w2s(A0), s0=c.raw?w2s(L2W(pi,c.raw)):a;
@@ -2550,19 +2674,21 @@ function cutAt(cx,cy,touch,Wt){
   if(k>=0) pick=info.find(x=>x.ai===k);
   if(!pick) return null;
   c.ax=pick.ai;
-  const o=pick.os[0], cd=o.cd, P=cd.p, pj=P.pi, b=cd.b, l=cd.l, kk=o.k,
+  const o=pick.os[0], cd=o.cd, P=cd.p, pj=P.pi, l=cd.l, kk=o.k,
         f=cutFace(c,o,[cx-rc.left-a[0],cy-rc.top-a[1]],pick.sk);      // 偏在棱的哪一边：从起点那条棱量，不从点下去的地方量
   c.face={p:P,k:kk,na:f.na,ns:f.ns};
-  const to=x=>Math.max(b.lo[kk],Math.min(b.hi[kk],x)),
+  const run=cutRunOf(c,P,kk,f.na,f.ns,l), to=x=>Math.max(run.lo,Math.min(run.hi,x)),
         good=(x,kd)=>Math.abs(to(x[kk])-l[kk])>=1&&(kd==='v'||kd==='m'||kd==='c'||Math.abs(x[f.na]-l[f.na])<.5);
-  let q=null, kind='';
+  let q=null, kind='', qw=null;
   if(Wt) q=W2L0(pj,Wt);
   else{const own=snapOn(P,cx,cy,touch?18:10,null,null,null);
     if(own&&good(own.q,own.kind)){q=own.q;kind=own.kind}
-    else{const s=snapAt(cx,cy,touch,null); if(s&&s.pi===pj&&good(s.p,s.kind)){q=s.p;kind=s.kind}}}
+    else{const s=snapAt(cx,cy,touch,null),
+        sq=!s?null:s.pi===pj?s.p:run.ps.some(x=>x.p.pi===s.pi)?W2L0(pj,L2W0(s.pi,s.p)):null;
+      if(sq&&good(sq,s.kind)){q=sq;kind=s.kind;if(s.pi!==pj)qw=L2W(s.pi,s.p)}}}
   const end=to(q?q[kk]:l[kk]+o.sl*Math.abs(pick.t));
   return {p:P,p1:l,na:f.na,ns:f.ns,ax:kk,sg:end>=l[kk]?1:-1,L:Math.round(Math.abs(end-l[kk])),ai:pick.ai,
-    lock:pick.ai===c.lock||(shiftOn&&pick.ai===c.sLock),kind,w:q&&!Wt?L2W(pj,q):null};
+    lock:pick.ai===c.lock||(shiftOn&&pick.ai===c.sLock),kind,w:q&&!Wt?(qw||L2W(pj,q)):null};
 }
 /* 按 木料 + 面 + 起点 + 方向 + 长度（cutAt 那样的一条）做出一条槽口标注。宽默认是木料在那个方向上的
    整宽 —— 那个方向要是木料的长向（横着开的槽），或者是块板材、宽料（超过 150），整宽就不像话了，
@@ -2575,7 +2701,8 @@ function makeCut(r){
   cutBox(an);return an;
 }
 /* 输入了槽的长度：往鼠标指着的那头开（开在预览着的那根木料、那个面上）；鼠标不在画面上就照锁定的
-   方向 —— 没锁就顺着点中的那根木料 —— 朝剩得多的那一头。负数 = 反过来 */
+   方向 —— 没锁就顺着点中的那根木料 —— 朝剩得多的那一头。负数 = 反过来。长度出了这根木料的头，接着开到
+   接在它头上的木料里去（cutRun），到这一路的头为止 */
 function applyCutLen(L){
   const c=tool.cut; if(!c){toast('先点一下开槽的起点');return}
   if(!c.opts) cutInit(c);
@@ -2587,7 +2714,8 @@ function applyCutLen(L){
     const x=best.x, f=cutFace(c,x,null,null);
     r={p:x.cd.p,p1:x.cd.l,na:f.na,ns:f.ns,ax:x.k,sg:x.sl}}
   if(L<0) r.sg=-r.sg;
-  const b=boxOf(r.p), room=Math.round(r.sg>0?b.hi[r.ax]-r.p1[r.ax]:r.p1[r.ax]-b.lo[r.ax]), want=Math.abs(L);
+  const run=cutRunOf(c,r.p,r.ax,r.na,r.ns,r.p1),
+        room=Math.round(r.sg>0?run.hi-r.p1[r.ax]:r.p1[r.ax]-run.lo), want=Math.abs(L);
   if(room<1){toast('这一头已经到木料的头了，换个方向');return}
   r.L=Math.min(want,room);
   const an=makeCut(r);
@@ -2834,6 +2962,7 @@ function toolTap(cx,cy,touch){
 }
 function tapAt(cx,cy,touch,multi){
   if(tool){toolTap(cx,cy,touch);return}
+  if(RO) multi=false;                                    // 只读：没有多选，按着 Ctrl 点也只是看它
   const h=hitAt(cx,cy,touch), i=h?h.i:-1;
   /* 标注旁边的 i / ×：只管它的信息开还是收；信息框里的网址、文件：点了就打开 */
   if(h&&h.info){if(A[i])infoToggle(A[i]);return}
@@ -2994,6 +3123,7 @@ function toolStep(){return !!tool&&(guided()||(tool.type==='notch'?!!tool.cut
   :tool.type==='view'?tool.pts.length>0
   :tool.type==='dim'&&(tool.stage==='place'?!tool.replace:tool.pts.length>tool.keep)))}
 function undo(){
+  if(RO) return;
   if(toolStep()){
     if(guided()) tool.guide.pop();
     else if(tool.type==='notch') tool.cut=null;
@@ -3006,6 +3136,7 @@ function undo(){
   RE.push(LAST);LAST=UN.pop();restore(LAST);
 }
 function redo(){
+  if(RO) return;
   if(!RE.length){toast('没有可以重做的了');return}
   if(tool)endTool();
   UN.push(LAST);LAST=RE.pop();restore(LAST);
@@ -3025,7 +3156,7 @@ function changed(structural,key){
 }
 function counts(){                       // 清单里一共几条、还有几条没完成
   const n=A.length, o=A.filter(a=>!a.done).length;
-  document.getElementById('annN').textContent=n?(o===n?n+' 条':n+' 条，'+o+' 条没完成'):'';
+  document.getElementById('annN').textContent=(n?(o===n?n+' 条':n+' 条，'+o+' 条没完成'):'')+(RO?(n?' · ':'')+'只读':'');
   const b=document.getElementById('tog2n');b.textContent=n||'';b.hidden=!n;
   infoBtn();
 }
@@ -3036,7 +3167,12 @@ function where(an){
   if(!placed(an)) return '';
   if(an.type==='dim'){const s=Array.from(new Set(an.pts.map(q=>q.pn)));
     return s.length>2?s[0]+' 等 '+s.length+' 块板':s.join(' → ')}
-  const p=pieceOf(an);return an.pn+(p?' · '+D.kinds[p.ki]+(p.lab?' '+p.lab:''):'');
+  const p=pieceOf(an), nm=q=>D.kinds[q.ki]+(q.lab?' '+q.lab:''), s=an.pn+(p?' · '+nm(p):'');
+  /* 跨了木料的槽：后面接着写开到了哪几根（别的板上的带板号）；多了就只写一共几根 */
+  const more=cutParts(an).slice(1);
+  if(!more.length) return s;
+  return more.length>2?s+' 等 '+(more.length+1)+' 根木料'
+    :s+more.map(x=>' → '+(x.p.pi===p.pi?'':D.panels[x.p.pi].n+' · ')+nm(x.p)).join('');
 }
 function sub(an){
   const p=pieceOf(an), g=an.g;
@@ -3312,7 +3448,7 @@ function selChanged(){if(SEL.size){sel=-1;edOpen=false}renderList();cap();draw(f
 function selAll(ids,on){ids.forEach(id=>{if(on)SEL.add(id);else SEL.delete(id)});selChanged()}
 /* 按着 Ctrl 点（模型上的对象、清单里的一行）：加进多选 / 从多选里去掉。原来单选着的那一条也算进去 */
 function pickMore(i){
-  const an=A[i]; if(!an) return;
+  const an=A[i]; if(!an||RO) return;
   if(!SEL.size&&sel>=0&&A[sel]&&sel!==i) SEL.add(A[sel].id);
   if(SEL.has(an.id)) SEL.delete(an.id); else SEL.add(an.id);
   {const g=grpOf(an); if(an.done)doneFold=false; else if(g)g.fold=false}        // 在折起来的组里：把那一组展开
@@ -3345,7 +3481,15 @@ function softClear(){
   document.querySelectorAll('#annList .an.sel').forEach(b=>{if(+b.dataset.i!==sel)b.classList.remove('sel')});
   renderEd();cap();draw(false);
 }
-/* 右下角的设置：勾着几条 → 一起处理的那排按钮 + 「一起改」；单选着一条 → 它的设置；都没有 → 不出。
+/* 只读时右下角那一块：只是看 —— 标题、说明（里面的网址能点）、文件（能点开）。手机上是底下那张小卡片（cap） */
+function viewFor(an){
+  const e=el('div','anV');
+  e.appendChild(el('div','vT',an.title));
+  if(an.text.trim()){const x=el('div','vX');putText(x,an.text);e.appendChild(x)}
+  if(an.media.length){const m=el('div','anM');e.appendChild(m);fillMedia(A.indexOf(an),m,false)}
+  return e;
+}
+/* 右下角的设置：勾着几条 → 一起处理的那排按钮 + 「一起改」；单选着一条 → 它的设置（只读时是 viewFor）；都没有 → 不出。
    做东西做到一半（tool）让开；手机上单选的先出底下那张小卡片，点了「编辑」（edOpen）才出 */
 function renderEd(){
   const P=document.getElementById('ed'), L=selList(), an=!L.length&&sel>=0?A[sel]:null,
@@ -3385,7 +3529,7 @@ function renderEd(){
       sb._sync=()=>{sb.textContent=[where(an),sub(an)].filter(Boolean).join(' · ');sb.title=sb.textContent;dot.style.background=effColor(an)};
       sb._sync();hd.appendChild(sb);
       hd.appendChild(ibtn('x','关闭',()=>{if(NARROW.matches){edOpen=false;renderEd();cap()}else select(-1)}));
-      P.appendChild(editFor([an],false));
+      P.appendChild(RO?viewFor(an):editFor([an],false));
     }
   }
   P.scrollTop=st;edBusy=false;
@@ -3404,17 +3548,17 @@ function card(i,host){
   ck.title='选中（能多选：一条条勾，或者在模型上按着 Ctrl 点；勾好了在右下角一起改）';ck.setAttribute('aria-label','选中');
   ck.onclick=ev=>ev.stopPropagation();
   ck.onchange=()=>{if(ck.checked)SEL.add(an.id);else SEL.delete(an.id);selChanged()};
-  h.appendChild(ck);h.appendChild(el('span','num'));
+  if(!RO)h.appendChild(ck);h.appendChild(el('span','num'));
   h.appendChild(el('div','t1'));h.appendChild(el('span','ty mini'));
   h.appendChild(ibtn(an.hidden?'eyeOff':'eye',an.hidden?'藏着：点一下显示':'隐藏（模型上不画）',
     ()=>{an.hidden=!an.hidden;changed(true)},an.hidden?'off':''));
   /* 点这一行：选中它（右下角出它的设置），镜头过去 —— 动态视角开着是回到做它时的视角，关着是角度不变、先全览再
      拉近。再点一下：不选了。按着 Ctrl 点：多选 */
-  const go=ev=>{if(ev&&guideKey(ev)){pickMore(i);return}
+  const go=ev=>{if(!RO&&ev&&guideKey(ev)){pickMore(i);return}
     if(i===sel){select(-1);return}select(i,true);if(NARROW.matches)closeAnn()};
   h.onclick=go;h.onkeydown=ev=>{if(ev.target===h&&(ev.key==='Enter'||ev.key===' ')){ev.preventDefault();go()}};
-  h.draggable=true;
-  h.ondragstart=ev=>{try{ev.dataTransfer.setData('text/plain',an.id);ev.dataTransfer.effectAllowed='move'}catch(_){}};
+  h.draggable=!RO;
+  if(!RO)h.ondragstart=ev=>{try{ev.dataTransfer.setData('text/plain',an.id);ev.dataTransfer.effectAllowed='move'}catch(_){}};
   box.appendChild(h);
   host.appendChild(box);
   fillRow(i,box);
@@ -3424,15 +3568,15 @@ function groupHead(g,mine){
   const h=el('div','gh'+(g.hidden?' hid':'')), c=el('span','gc'+(g.color?'':' no')), nm=el('span','gn',g.name),
         n=mine.length, fold=()=>{g.fold=!g.fold;renderList();autosave()};
   h.dataset.g=g.id;
-  h.appendChild(allBox(mine.map(i=>A[i].id),'「'+g.name+'」这一组'));
+  if(!RO)h.appendChild(allBox(mine.map(i=>A[i].id),'「'+g.name+'」这一组'));
   h.appendChild(foldBtn(g.fold,fold));
   if(g.color)c.style.background=g.color;c.title=g.color?'这一组统一用这个颜色':'没指定颜色：各用各的';h.appendChild(c);
   nm.title=g.name;nm.onclick=fold;h.appendChild(nm);
   h.appendChild(el('span','mini',String(n)));
   h.appendChild(ibtn(g.hidden?'eyeOff':'eye',g.hidden?'这一组藏着：点一下显示':'隐藏这一组（模型上不画）',
     ()=>{g.hidden=!g.hidden;changed(true)},g.hidden?'off':''));
-  h.appendChild(ibtn('pen','改名、换颜色、删除群组',()=>{gEdit=gEdit===g.id?'':g.id;gFocus=!!gEdit;renderList()}));
-  dropOn(h,a=>{a.grp=g.id;a.done=false;changed(true)});
+  if(!RO){h.appendChild(ibtn('pen','改名、换颜色、删除群组',()=>{gEdit=gEdit===g.id?'':g.id;gFocus=!!gEdit;renderList()}));
+    dropOn(h,a=>{a.grp=g.id;a.done=false;changed(true)})}
   return h;
 }
 function groupEditor(g){
@@ -3456,37 +3600,39 @@ function groupEditor(g){
   return e;
 }
 function addGroup(){
+  if(RO) return;
   const g=newGroup();gEdit=g.id;gFocus=true;openAnn();changed(true);
 }
 function renderList(){
   const host=document.getElementById('annList'), st=host.scrollTop;host.textContent='';
-  if(!A.length&&!G.length)host.appendChild(el('div','mini','还没有东西。点上面的按钮，再到模型上点位置。'));
+  if(!A.length&&!G.length)host.appendChild(el('div','mini',RO?'还没有东西。':'还没有东西。点上面的按钮，再到模型上点位置。'));
   const idx=A.map((_,i)=>i), open=idx.filter(i=>!A[i].done), dn=idx.filter(i=>A[i].done),
         zone=()=>{const z=el('div','gz');host.appendChild(z);return z};
   /* 没分组的排在最前面，也有一行头：方格全选这一段；有群组的时候卡片能拖回这儿来 */
   const free=open.filter(i=>!grpOf(A[i]));
-  if(free.length||G.length){const h=el('div','gh'), nm=el('span','gn',G.length?'未分组':'全部');nm.style.cursor='default';
-    h.appendChild(allBox(free.map(i=>A[i].id),G.length?'没分组的':''));
+  /* 只读时这一行只是个小标题：有群组、又有没分组的才要它 */
+  if(RO?(free.length&&G.length):(free.length||G.length)){const h=el('div','gh'), nm=el('span','gn',G.length?'未分组':'全部');nm.style.cursor='default';
+    if(!RO)h.appendChild(allBox(free.map(i=>A[i].id),G.length?'没分组的':''));
     h.appendChild(nm);h.appendChild(el('span','mini',String(free.length)));
-    if(G.length)dropOn(h,a=>{a.grp='';a.done=false;changed(true)});host.appendChild(h)}
+    if(G.length&&!RO)dropOn(h,a=>{a.grp='';a.done=false;changed(true)});host.appendChild(h)}
   {const z=zone();free.forEach(i=>card(i,z))}
   G.forEach(g=>{
     const mine=open.filter(i=>A[i].grp===g.id);
     host.appendChild(groupHead(g,mine));
-    if(gEdit===g.id)host.appendChild(groupEditor(g));
+    if(!RO&&gEdit===g.id)host.appendChild(groupEditor(g));
     if(!g.fold){const z=zone();mine.forEach(i=>card(i,z))}
   });
   /* 已完成：最下面那一组。模型上统一是很淡的浅灰；它也能整组藏起来 */
   if(dn.length){
     const h=el('div','gh'+(doneHidden?' hid':'')), c=el('span','gc'), nm=el('span','gn','已完成'),
           fold=()=>{doneFold=!doneFold;renderList();autosave()};
-    h.appendChild(allBox(dn.map(i=>A[i].id),'已完成的'));
+    if(!RO)h.appendChild(allBox(dn.map(i=>A[i].id),'已完成的'));
     h.appendChild(foldBtn(doneFold,fold));
     c.style.background=DONEC;h.appendChild(c);nm.onclick=fold;h.appendChild(nm);
     h.appendChild(el('span','mini',String(dn.length)));
     h.appendChild(ibtn(doneHidden?'eyeOff':'eye',doneHidden?'已完成的都藏着：点一下显示':'隐藏已完成的（模型上不画）',
       ()=>{doneHidden=!doneHidden;changed(true)},doneHidden?'off':''));
-    dropOn(h,a=>{a.done=true;changed(true)});
+    if(!RO)dropOn(h,a=>{a.done=true;changed(true)});
     host.appendChild(h);
     if(!doneFold){const z=zone();dn.forEach(i=>card(i,z))}
   }
@@ -3515,11 +3661,15 @@ function autosave(){clearTimeout(saveT);saveT=setTimeout(()=>{
   state()},400)}
 function state(){
   const s=document.getElementById('annState');s.textContent='';
-  const t=(dirty&&!lsOK)?'⚠ 浏览器存不下草稿（附件太大，或浏览器不让存），关页面前请点「保存 HTML」。'
+  /* 规定了只读的一份（LOCK）是给别人看的：他只动得了显示 / 隐藏，不跟他说保存的事 */
+  const ro=LOCK?'这一份是只读的：只能看，不能改。':RO?'现在是只读：只能看，不能改。要改，点一下那把锁。':'';
+  const t=LOCK?(fromDraft?'上次在这个浏览器里显示 / 隐藏过东西。':'')
+    :(dirty&&!lsOK)?'⚠ 浏览器存不下草稿（附件太大，或浏览器不让存），关页面前请点「保存 HTML」。'
     :fromDraft?'这是上次在这个浏览器里没保存完的标注。'
-    :dirty?'改动已自动存在这个浏览器里；要发给别人，点「保存 HTML」。':'';
+    :dirty?'改动已自动存在这个浏览器里；要发给别人，点「保存 HTML」或者「分享」。':'';
+  if(ro)s.appendChild(el('div',null,ro));
   if(t)s.appendChild(document.createTextNode(t));
-  if(fromDraft){const b=el('button','inl','改回文件里的');b.onclick=resetDraft;s.appendChild(b)}
+  if(fromDraft){const b=el('button','inl',LOCK?'恢复原样':'改回文件里的');b.onclick=resetDraft;s.appendChild(b)}
 }
 function loadItems(items){const have=new Set();A=[];
   (Array.isArray(items)?items:[]).forEach(o=>normAll(o).forEach(an=>{if(!have.has(an.id)){have.add(an.id);A.push(an)}}));
@@ -3542,20 +3692,68 @@ function resetDraft(){
   loadAll(ANN0);fromDraft=false;dirty=false;sel=-1;record();
   vwClip();renderViews();rebuildMarks();renderList();counts();state();cap();undoBtns();draw(false);
 }
-/* 带标注的整页源码：把 SRC 里那块标注数据换成现在的。< 写成 <，数据里就不会
+/* 带标注的整页源码：把 SRC 里那块标注数据换成现在的。ro：存成只读的一份（本来就是只读的一份，再存还是只读）。< 写成 <，数据里就不会
    出现能提前结束 script 的字样 */
-function htmlWith(){
+function htmlWith(ro){
   const o=pack();o.rev=Date.now().toString(36);
+  if(ro||LOCK)o.ro=1;                                    // 只读的一份：打开就是只读，那把锁点不开
   const j=JSON.stringify(o).replace(/</g,'\\u003c');
   const m=/(<script[^>]*id="ann0"[^>]*>)[\s\S]*?(<\/script>)/.exec(SRC);
   return SRC.slice(0,m.index)+m[1]+j+m[2]+SRC.slice(m.index+m[0].length);
 }
-function fname(ext){const d=new Date(), p=n=>String(n).padStart(2,'0');
-  return (D.job||'model')+'_标注_'+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'-'+p(d.getHours())+p(d.getMinutes())+'.'+ext}
+function fname(ext,ro){const d=new Date(), p=n=>String(n).padStart(2,'0');
+  return (D.job||'model')+'_标注_'+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'-'+p(d.getHours())+p(d.getMinutes())+(ro?'_只读':'')+'.'+ext}
 function download(name,text,type){
   const u=URL.createObjectURL(new Blob([text],{type})), a=el('a');
   a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();
   setTimeout(()=>URL.revokeObjectURL(u),30000);
+}
+/* 把一段字放进剪贴板：行了 ok()，不行 fail() */
+function copyText(t,ok,fail){
+  const old=()=>{const ta=el('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.select();let r=false;try{r=document.execCommand('copy')}catch(_){}
+    ta.remove();r?ok():fail()};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(ok,old);else old();
+}
+/* ----- 分享：给对方可编辑的一份，还是只读的一份 ----- */
+/* 用户（2026-11-16）：「分享的时候有两个选项：一个是可编辑，另一个是不可编辑。」点「分享」展开两行，一行一种：
+   · 链接（这一页是从网上打开的才有）：网址，只读的带着 ?view=1。对方看到的是网上那一份 —— 这台设备上改过、
+     还没传上去的东西不在里面，复制的时候说一声；
+   · 文件：带着这台设备上现在的标注的一份 HTML，只读的里面记着 ro。手机上直接调起系统的分享，电脑上存到「下载」。
+   本来就是只读的一份（LOCK）只能再分享只读的。 */
+let shareOpen=false;
+function webPage(){try{return /^https?:$/.test(location.protocol)}catch(_){return false}}
+function linkFor(ro){const u=location.origin+location.pathname;return ro?u+'?view=1':u}
+function shareLink(ro){
+  ro=!!ro||LOCK;
+  const u=linkFor(ro), kind=ro?'只读':'可编辑',
+        warn=dirty||fromDraft?'注意：这台设备上改过的东西还没传到网上，对方打开链接看到的是网上那一份；要带上，用「文件」':'';
+  if(NARROW.matches&&navigator.share){
+    navigator.share({title:document.title,url:u}).then(()=>{if(warn)toast(warn)},()=>{});return}
+  copyText(u,()=>toast(kind+'的链接已复制，粘贴发给对方'+(warn?'。'+warn:'')),()=>toast('这个浏览器复制不了，链接是：'+u));
+}
+function shareFile(ro){
+  ro=!!ro||LOCK;
+  const name=fname('html',ro), html=htmlWith(ro); let f=null;
+  try{f=new File([html],name,{type:'text/html'})}catch(_){}
+  if(NARROW.matches&&f&&navigator.canShare&&navigator.canShare({files:[f]})){
+    navigator.share({files:[f],title:document.title}).catch(()=>{});return}
+  download(name,html,'text/html');
+  toast('已另存一份'+(ro?'只读':'可编辑')+'的 HTML，在浏览器的「下载」里，把它发给对方');
+}
+function renderShare(){
+  const B=document.getElementById('shareBox'), bs=document.getElementById('bShare');
+  B.textContent='';B.hidden=!shareOpen;bs.classList.toggle('on',shareOpen);bs.setAttribute('aria-expanded',shareOpen?'true':'false');
+  if(!shareOpen) return;
+  const web=webPage(),
+        row=(name,ro,tip)=>{const r=el('div','sh');r.appendChild(el('b',null,name));r.title=tip;
+          if(web){const a=el('button',null,'链接');a.type='button';a.onclick=()=>shareLink(ro);r.appendChild(a)}
+          const f=el('button',null,'文件');f.type='button';f.onclick=()=>shareFile(ro);r.appendChild(f);
+          B.appendChild(r)};
+  if(!LOCK)row('可编辑',false,'对方打开能接着改');
+  row('只读',true,'对方打开只能看，不能改');
+  B.appendChild(el('div','mini',(LOCK?'这一份是只读的，分享出去的也是只读。':'只读：对方只能看，不能改。')+
+    (web?'链接：对方看到的是网上那一份。文件：带着这台设备上现在的标注。':'')));
 }
 /* 清单的文字版：和清单一个顺序 —— 没分组的、一个个群组、已处理。一条一行：标题【是什么】在哪；多大；说明；文件 */
 function listText(){
@@ -3572,6 +3770,7 @@ function listText(){
   return s;
 }
 function importText(s){
+  if(RO) return;
   let o=null;
   try{const m=/<script[^>]*id="ann0"[^>]*>([\s\S]*?)<\/script>/.exec(s);o=JSON.parse(m?m[1]:s)}catch(_){}
   const items=Array.isArray(o)?o:(o&&o.items);
@@ -3605,29 +3804,21 @@ document.getElementById('bUndo').onclick=undo;
 document.getElementById('bRedo').onclick=redo;
 tog2.onclick=()=>{document.body.classList.contains('ann-open')?closeAnn():openAnn()};
 document.getElementById('bSave').onclick=()=>{
-  download(fname('html'),htmlWith(),'text/html');dirty=false;fromDraft=false;state();
+  download(fname('html',LOCK),htmlWith(),'text/html');dirty=false;fromDraft=false;state();
   toast('已另存一份带标注的 HTML，在浏览器的「下载」里')};
-const bShare=document.getElementById('bShare');
-try{if(navigator.canShare&&navigator.canShare({files:[new File(['x'],'a.html',{type:'text/html'})]}))bShare.hidden=false}catch(_){}
-bShare.onclick=()=>{
-  try{navigator.share({files:[new File([htmlWith()],fname('html'),{type:'text/html'})],title:document.title}).catch(()=>{})}
-  catch(_){toast('这个浏览器不能直接分享，请用「保存 HTML」')}};
+document.getElementById('bShare').onclick=()=>{shareOpen=!shareOpen;renderShare()};
 document.getElementById('bExp').onclick=()=>download(fname('json'),JSON.stringify(pack()),'application/json');
 document.getElementById('bImp').onclick=()=>{const f=document.getElementById('fImp');f.value='';f.click()};
 document.getElementById('fImp').onchange=e=>{const f=e.target.files[0];
   if(f)f.text().then(importText,()=>toast('这个文件读不出来'))};
-document.getElementById('bCopy').onclick=()=>{
-  const t=listText(), ok=()=>toast('清单已复制，可以直接粘贴到微信、邮件里');
-  const old=()=>{const ta=el('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';
-    document.body.appendChild(ta);ta.select();let r=false;try{r=document.execCommand('copy')}catch(_){}
-    ta.remove();r?ok():toast('这个浏览器复制不了，请用「导出标注」')};
-  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(ok,old);else old();
-};
+document.getElementById('bCopy').onclick=()=>copyText(listText(),()=>toast('清单已复制，可以直接粘贴到微信、邮件里'),
+  ()=>toast('这个浏览器复制不了'+(RO?'':'，请用「导出标注」')));
 document.getElementById('lb').onclick=e=>{if(!e.target.closest('video,audio'))closeLb()};
 document.getElementById('capP').onclick=()=>step(-1);
 document.getElementById('capNx').onclick=()=>step(1);
 document.getElementById('capE').onclick=()=>{edOpen=true;renderEd();cap()};
 document.getElementById('togV').onclick=dynToggle;dynBtn();
+document.getElementById('togR').onclick=roToggle;roBtn();
 /* 多选着、在「一起改」里打过字，焦点离开了设置（点到别处、按了回车）：改完了，勾都去掉。
    点设置里的空白处不算离开（不让它把焦点带走） */
 {const P=document.getElementById('ed');
@@ -3640,6 +3831,7 @@ addEventListener('keydown',e=>{
   /* 撤销 Ctrl+Z，重做 Ctrl+Shift+Z（也认 Ctrl+Y；Mac 上是 ⌘）。说明框里也归这里管 ——
      让浏览器自己撤销的话，它改回去的字会被当成又一次新的改动 */
   if((e.ctrlKey||e.metaKey)&&!e.altKey&&(k==='z'||k==='y')){
+    if(RO) return;                                    // 只读：没有标注上的改动可退，留给浏览器
     if(t&&t.closest&&t.closest('.lk')) return;        // 填链接的两个框还不是标注数据，留给浏览器
     e.preventDefault();(k==='y'||e.shiftKey)?redo():undo();return}
   const typing=/^(input|textarea|select)$/.test(tag);
@@ -3658,7 +3850,7 @@ addEventListener('keydown',e=>{
   if(SEL.size){SEL.clear();selChanged();return}        // 勾着的：都去掉
   if(sel>=0&&A[sel]&&!isNote(A[sel])) select(-1);       // 选着画上去的东西：不选了
 });
-addEventListener('beforeunload',e=>{if(dirty&&!lsOK){e.preventDefault();e.returnValue=''}});
+addEventListener('beforeunload',e=>{if(dirty&&!lsOK&&!LOCK){e.preventDefault();e.returnValue=''}});
 
 /* 开页面：文件里带的标注；这个浏览器里要是有同一份文件没保存完的草稿，接着用草稿 */
 (function(){
