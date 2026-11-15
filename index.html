@@ -71,9 +71,49 @@ td:first-child{color:var(--dim);padding-right:8px;white-space:nowrap}
 #annState:empty{display:none}
 .an{border:1px solid var(--line);border-radius:8px;margin-bottom:6px;background:#201d17}
 .an.sel{border-color:var(--acc)}
-.anH{display:flex;gap:8px;padding:7px 8px;cursor:pointer;align-items:flex-start}
-.num{flex:none;width:20px;height:20px;border-radius:50%;font-size:11px;font-weight:700;
-  display:flex;align-items:center;justify-content:center}
+.anH{display:flex;gap:8px;padding:7px 6px 7px 8px;cursor:pointer;align-items:flex-start}
+.num{flex:none;width:12px;height:12px;margin-top:4px;border-radius:50%;box-shadow:0 0 0 1px rgba(255,255,255,.3)}
+#capN{width:14px;height:14px;margin-top:0}
+/* 清单照待办清单的样子：每张卡片左边一个勾（已处理），右上角一个眼睛（隐藏）；卡片能归到群组里，
+   群组一行：折叠箭头、颜色、名字、条数、眼睛、改名。已处理的归到最下面那一组 */
+.ck{flex:none;width:15px;height:15px;margin-top:2px;cursor:pointer}
+button.ib{flex:none;min-width:0;width:24px;height:24px;padding:0;display:flex;align-items:center;justify-content:center;
+  background:transparent;border-color:transparent;color:var(--dim)}
+button.ib svg{width:15px;height:15px;pointer-events:none}
+button.ib.off{color:var(--bad)}
+.anH>button.ib{margin:-2px 0}
+.an.hid .anT,.an.hid .num{opacity:.45}
+.gh{display:flex;align-items:center;gap:4px;margin:10px 0 6px;padding:2px 0 2px 2px;border-radius:6px;font-size:12px;font-weight:600}
+.gh.drop,#annList .gz.drop{outline:1px dashed var(--acc)}
+.gh .gn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.gh .gc{flex:none;width:12px;height:12px;border-radius:50%;box-shadow:0 0 0 1px rgba(255,255,255,.3)}
+.gh .gc.no{background:transparent;box-shadow:0 0 0 1px var(--dim) inset}
+.gh.hid .gn,.gh.hid .gc{opacity:.45}
+.gh .mini{font-weight:400}
+.ge{margin:-2px 0 8px;padding:8px;border:1px solid var(--line);border-radius:8px;background:#201d17}
+.ge .cols{margin-top:8px}
+.gz{min-height:6px;border-radius:6px}
+.fld{display:flex;flex-direction:column;align-items:stretch;gap:2px;margin-top:8px;font-size:11px;color:var(--dim);cursor:default;padding:0}
+.fld input[type=text],.fld select,.ge input[type=text],.vw input[type=text]{width:100%;background:#15130f;color:var(--fg);
+  border:1px solid var(--line);border-radius:6px;padding:5px 8px;font:inherit;font-size:12px}
+.fld input:focus,.fld select:focus,.ge input:focus,.vw input:focus{outline:none;border-color:var(--acc)}
+.fld textarea{margin-top:0}
+.t3{color:var(--dim);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.t3:empty{display:none}
+.cols.lock .cdot{opacity:.35}
+/* 视角：俯视是自带的；三点定出来的一条一张小卡片。正用着的那个描金边，剖切深度的滑块跟在它下面 */
+.vw{border:1px solid var(--line);border-radius:8px;margin-top:6px;background:#201d17}
+.vw.on{border-color:var(--acc)}
+.vwH{display:flex;align-items:center;gap:2px;padding:2px 2px 2px 8px}
+.vwN{flex:1;min-width:0;padding:4px 0;cursor:pointer;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vw.on .vwN{color:var(--acc)}
+.vwC{padding:2px 8px 8px}
+.vwC.top{padding:8px 0 0}
+.vwL{display:flex;align-items:baseline;gap:6px;font-size:11px;color:var(--dim)}
+.vwR{display:flex;align-items:center;gap:6px}
+.vwR input[type=number]{flex:none;width:68px;background:#15130f;color:var(--fg);border:1px solid var(--line);
+  border-radius:6px;padding:3px 6px;font:inherit;font-size:12px}
+.vwR input[type=number]:focus{outline:none;border-color:var(--acc)}
 /* 画上去的东西（测量、高亮、槽口、开洞）的小界面：点中它时浮在它旁边，比别的面板透一些 */
 #pop{z-index:4;width:226px;padding:6px 10px 10px;background:color-mix(in srgb,var(--panel) 74%,transparent)}
 #pop[hidden]{display:none}
@@ -202,6 +242,12 @@ body.side-open #tog .i-x{display:inline}
   #cap{left:12px;right:12px;bottom:12px;z-index:1;padding:10px 12px;max-height:46vh;overflow:auto}
   body.has-cap #hud{display:none}
   textarea,.anE input[type=number],.lk input{font-size:16px}
+  .fld input[type=text],.fld select,.ge input[type=text],.vw input[type=text],.vwR input[type=number]{font-size:16px}
+  button.ib{width:36px;height:36px}
+  button.ib svg{width:19px;height:19px}
+  .anH>button.ib{margin:-7px -4px -7px 0}
+  .ck{width:20px;height:20px;margin-top:0}
+  .vwN{padding:9px 0;font-size:13px}
   .cdot{width:26px;height:26px}
   .cols{gap:7px}             /* 八个色点排一行（列表出了滚动条也够） */
   button.ic{width:40px;height:40px}
@@ -235,20 +281,16 @@ body.side-open #tog .i-x{display:inline}
 
   <h2>视图</h2>
   <div class="row">
-    <button data-view="iso">轴测</button><button data-view="top">俯视</button>
-    <button data-view="front">正视</button><button data-view="side">侧视</button>
+    <button data-view="top" id="bTop" class="on">俯视</button><button id="bProj" class="on">正交</button>
   </div>
-  <div class="row">
-    <button id="bWire">线框</button><button id="bEdge" class="on">边线</button><button id="bProj" class="on">正交</button><button id="bFit">全览</button>
-  </div>
+  <div id="views"></div>
+  <div class="row"><button data-tool="view" id="bView" title="在模型上点三个点：原点、X 轴、Y 轴，面朝这个平面看过去">＋ 三点定义视角</button></div>
 
   <h2>楼层</h2><div id="lvs"></div>
   <h2>构件类型</h2><div id="kds"></div>
 
   <h2>爆炸 <span class="mini" id="expv">0</span></h2>
   <input type="range" id="exp" min="0" max="100" value="0">
-  <h2>剖切高度 <span class="mini" id="clipv">全部</span></h2>
-  <input type="range" id="clip" min="0" max="100" value="100">
 </div>
 
 <div id="rcol">
@@ -256,14 +298,15 @@ body.side-open #tog .i-x{display:inline}
   <div id="annHead" role="button" tabindex="0" aria-expanded="true" aria-controls="annBody"><h1>标注 <span class="mini" id="annN"></span></h1><button id="bUndo" class="ic" type="button" title="撤销（Ctrl+Z）" aria-label="撤销" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 010 11H11"/></svg></button><button id="bRedo" class="ic" type="button" title="重做（Ctrl+Shift+Z）" aria-label="重做" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 000 11H13"/></svg></button><svg id="annFold" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></div>
   <div id="annBody">
     <div class="row">
-      <button data-tool="note">文字标注</button><button data-tool="doc">文件标注</button>
+      <button data-tool="note">标注</button><button data-tool="hl">高亮构件</button>
     </div>
     <div class="row">
-      <button data-tool="hl">高亮构件</button><button data-tool="notch">槽口</button><button data-tool="hole">开洞</button>
+      <button data-tool="notch">槽口</button><button data-tool="hole">开洞</button>
     </div>
     <div class="row">
       <button data-tool="dim1">单次测量</button><button data-tool="dimc">连续测量</button>
     </div>
+    <div class="row"><button id="bGrp" type="button">＋ 新建群组</button></div>
     <div id="annList"></div>
     <div class="row">
       <button id="bSave">保存 HTML</button><button id="bShare" hidden>分享</button><button id="bCopy">复制清单</button>
@@ -288,7 +331,7 @@ body.side-open #tog .i-x{display:inline}
 <div id="lb" hidden><button id="lbX" type="button" aria-label="关闭" title="关闭"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div id="lbC"></div><div id="lbT"></div></div>
 <div id="toast" role="status" aria-live="polite"></div>
 <input type="file" id="fMedia" multiple hidden><input type="file" id="fImp" accept=".json,.html,.htm" hidden>
-<script type="application/json" id="ann0">{"v":1,"job":"6083C","rev":"7e58cf8ad7","items":[{"id":"amwevvtkzcnan","type":"dim","text":"","color":"#19d3c5","done":false,"t":1794568724099,"media":[],"view":{"yaw":-0.856,"pitch":0.3786,"dist":2217,"t":[6747,-11684,-2631],"o":1,"exp":0,"clip":100,"a":1.832,"hl":[],"hk":[]},"pts":[{"pn":"E16","p":[0,90,0]},{"pn":"E16","p":[45,90,45]},{"pn":"E16","p":[90,90,45]},{"pn":"E16","p":[135,90,45]},{"pn":"E16","p":[445,90,45]},{"pn":"E16","p":[580,90,45]},{"pn":"E16","p":[1718,90,0]}],"pn":"E16","dir":[1,0,0],"show":"a","chain":true,"off":271,"ov":[0,1,0],"flip":false},{"id":"amwew769l990z","type":"hl","text":"","color":"#ff453a","done":false,"t":1794569253753,"media":[],"view":{"yaw":0.392,"pitch":0.4906,"dist":1252,"t":[9568,-18577,1145],"o":1,"exp":0,"clip":100,"a":1.832,"hl":[],"hk":[]},"pn":"E16","mi":27,"ms":"J|445|45|45|2325","pt":[452.7,90,2233.5]},{"id":"amwexjsgtobmm","type":"notch","text":"213去","color":"#2f9bff","done":false,"t":1794571522013,"media":[],"view":{"yaw":-2.484,"pitch":0.5026,"dist":2732,"t":[6184,-11171,956],"o":1,"exp":0,"clip":100,"a":1.832,"hl":[],"hk":[]},"pn":"E6","mi":0,"ms":"C|0|2415|1240|45","pt":[1140,45,2460],"g":{"na":2,"ax":0,"wa":1,"ns":1,"pos":1140,"off":45,"L":200,"W":90,"Dp":45,"d":25,"sh":"c","sg":-1,"s0":1240,"o0":45},"box":[1040,0,2415,1240,90,2460]},{"id":"amwexn3s1l5eq","type":"dim","text":"","color":"#19d3c5","done":false,"t":1794571676641,"media":[],"view":{"yaw":-2.472,"pitch":0.6106,"dist":443,"t":[5947,-11422,337],"o":1,"exp":0,"clip":100,"a":1.832,"hl":[],"hk":[]},"pts":[{"pn":"E6","p":[0,90,2460]},{"pn":"E6","p":[1039.6,90,2460]}],"pn":"E6","dir":[-1,0,0],"show":"r","chain":false,"off":-39,"ov":[0,-1,0],"flip":false},{"id":"amwflmqipu90z","type":"note","text":"121大多都是","color":"#3ddc5f","done":false,"t":1794611970241,"media":[],"view":{"yaw":-2.292,"pitch":0.4266,"dist":5965,"t":[5303,-12339,-849],"o":1,"exp":0,"clip":100,"a":1.832,"hl":[],"hk":[]},"pn":"E7","mi":15,"ms":"A|0|0|2000|45","pt":[1217.3,90,45]},{"id":"amwfof6v9y2uj","type":"notch","text":"","color":"#2f9bff","done":false,"t":1794616657029,"media":[],"view":{"yaw":-2.808,"pitch":0.456,"dist":1709,"t":[8900,-12049,-2274],"o":1,"exp":0,"clip":100,"a":1.832,"hl":[],"hk":[]},"pn":"E6","mi":13,"ms":"A|0|0|1240|45","pt":[1147.5,45,45],"g":{"na":2,"ax":0,"wa":1,"ns":1,"pos":1147.5,"off":45,"L":185,"W":90,"Dp":45,"d":25,"sh":"c","sg":-1,"s0":1240,"o0":45},"box":[1055,0,0,1240,90,45]},{"id":"amwfofp502tpp","type":"notch","text":"","color":"#2f9bff","done":false,"t":1794616680708,"media":[],"view":{"yaw":-3.352,"pitch":0.736,"dist":1016,"t":[7923,-14750,-3787],"o":1,"exp":0,"clip":100,"a":1.832,"hl":[],"hk":[]},"pn":"E7","mi":15,"ms":"A|0|0|2000|45","pt":[100,45,45],"g":{"na":2,"ax":0,"wa":1,"ns":1,"pos":100,"off":45,"L":200,"W":90,"Dp":45,"d":25,"sh":"c","sg":1,"s0":0,"o0":45},"box":[0,0,0,200,90,45]},{"id":"amwfpgufl6ug6","type":"hole","text":"","color":"#c56bff","done":false,"t":1794618413841,"media":[],"view":{"yaw":-0.9,"pitch":0.52,"dist":784,"t":[7086,-11479,5102],"o":1,"exp":0,"clip":100,"a":1.832,"hl":[],"hk":[]},"pn":"E48","mi":7,"ms":"C|0|2708|840|45","pt":[198,45,2753],"g":{"na":2,"ax":0,"wa":1,"ns":1,"pos":198,"off":45,"L":100,"W":90,"Dp":20,"d":25,"sh":"c"},"box":[185.5,32.5,2708,210.5,57.5,2753]},{"id":"amwfphm31u3k3","type":"hole","text":"","color":"#c56bff","done":false,"t":1794618449677,"media":[],"view":{"yaw":-0.872,"pitch":0.788,"dist":443,"t":[8142,-13485,2573],"o":1,"exp":0,"clip":100,"a":1.832,"hl":[],"hk":[]},"pn":"E47","mi":15,"ms":"D|3836|45|45|2618","pt":[3858.5,90,230],"g":{"na":1,"ax":2,"wa":0,"ns":1,"pos":185,"off":22.5,"L":100,"W":45,"Dp":20,"d":25,"sh":"c"},"box":[3846,0,217.5,3871,90,242.5]},{"id":"amwfpjb1nop16","type":"notch","text":"","color":"#2f9bff","done":false,"t":1794618528683,"media":[],"view":{"yaw":2.048,"pitch":0.828,"dist":1624,"t":[8482,-9142,-2903],"o":1,"exp":0,"clip":100,"a":1.832,"hl":[],"hk":[]},"pn":"E1","mi":1,"ms":"G|0|2415|5850|45","pt":[4866,45,2460],"g":{"na":2,"ax":0,"wa":1,"ns":1,"pos":4866,"off":45,"L":168,"W":90,"Dp":20,"d":25,"sh":"c","sg":-1,"s0":4950,"o0":45},"box":[4782,0,2440,4950,90,2460]},{"id":"amwfq0k4qzhyb","type":"hl","text":"这是什么","color":"#ff453a","done":false,"t":1794619333610,"media":[],"view":{"yaw":-4,"pitch":0.4306,"dist":3729,"t":[7469,-5954,2071],"o":1,"exp":0,"clip":100,"a":1.832,"hl":[],"hk":[]},"pn":"E28","mi":13,"ms":"E|2110|45|45|2858","pt":[2138.8,90,415.7]},{"id":"amwfq38qnmgbo","type":"dim","text":"测量","color":"#19d3c5","done":false,"t":1794619458815,"media":[],"view":{"yaw":-2.152,"pitch":0.6626,"dist":3729,"t":[5418,-23376,5888],"o":1,"exp":0,"clip":100,"a":1.832,"hl":[],"hk":[]},"pts":[{"pn":"E13","p":[804,90,0]},{"pn":"E13","p":[697,90,45]},{"pn":"E13","p":[342,90,45]},{"pn":"E13","p":[0,90,45]}],"pn":"E13","dir":[1,0,0],"show":"ar","chain":true,"off":-165,"ov":[0,-1,0],"flip":false}]}</script>
+<script type="application/json" id="ann0">{"v":2,"job":"6083C","rev":"7e58cf8ad7","items":[{"id":"amwevvtkzcnan","type":"dim","text":"","color":"#19d3c5","done":false,"t":1794568724099,"media":[],"view":{"yaw":-0.856,"pitch":0.3786,"dist":2217,"t":[6747,-11684,-2631],"o":1,"exp":0,"clip":100,"a":1.832,"hl":[],"hk":[]},"pts":[{"pn":"E16","p":[0,90,0]},{"pn":"E16","p":[45,90,45]},{"pn":"E16","p":[90,90,45]},{"pn":"E16","p":[135,90,45]},{"pn":"E16","p":[445,90,45]},{"pn":"E16","p":[580,90,45]},{"pn":"E16","p":[1718,90,0]}],"pn":"E16","dir":[1,0,0],"show":"a","chain":true,"off":271,"ov":[0,1,0],"flip":false},{"id":"amwew769l990z","type":"hl","text":"","color":"#ff453a","done":false,"t":1794569253753,"media":[],"view":{"yaw":0.392,"pitch":0.4906,"dist":1252,"t":[9568,-18577,1145],"o":1,"exp":0,"clip":100,"a":1.832,"hl":[],"hk":[]},"pn":"E16","mi":27,"ms":"J|445|45|45|2325","pt":[452.7,90,2233.5]},{"id":"amwexjsgtobmm","type":"notch","text":"213去","color":"#2f9bff","done":false,"t":1794571522013,"media":[],"view":{"yaw":-2.484,"pitch":0.5026,"dist":2732,"t":[6184,-11171,956],"o":1,"exp":0,"clip":100,"a":1.832,"hl":[],"hk":[]},"pn":"E6","mi":0,"ms":"C|0|2415|1240|45","pt":[1140,45,2460],"g":{"na":2,"ax":0,"wa":1,"ns":1,"pos":1140,"off":45,"L":200,"W":90,"Dp":45,"d":25,"sh":"c","sg":-1,"s0":1240,"o0":45},"box":[1040,0,2415,1240,90,2460]},{"id":"amwexn3s1l5eq","type":"dim","text":"","color":"#19d3c5","done":false,"t":1794571676641,"media":[],"view":{"yaw":-2.472,"pitch":0.6106,"dist":443,"t":[5947,-11422,337],"o":1,"exp":0,"clip":100,"a":1.832,"hl":[],"hk":[]},"pts":[{"pn":"E6","p":[0,90,2460]},{"pn":"E6","p":[1039.6,90,2460]}],"pn":"E6","dir":[-1,0,0],"show":"r","chain":false,"off":-39,"ov":[0,-1,0],"flip":false},{"id":"amwflmqipu90z","type":"note","text":"121大多都是","color":"#3ddc5f","done":false,"t":1794611970241,"media":[],"view":{"yaw":-2.292,"pitch":0.4266,"dist":5965,"t":[5303,-12339,-849],"o":1,"exp":0,"clip":100,"a":1.832,"hl":[],"hk":[]},"pn":"E7","mi":15,"ms":"A|0|0|2000|45","pt":[1217.3,90,45]},{"id":"amwfof6v9y2uj","type":"notch","text":"","color":"#2f9bff","done":false,"t":1794616657029,"media":[],"view":{"yaw":-2.808,"pitch":0.456,"dist":1709,"t":[8900,-12049,-2274],"o":1,"exp":0,"clip":100,"a":1.832,"hl":[],"hk":[]},"pn":"E6","mi":13,"ms":"A|0|0|1240|45","pt":[1147.5,45,45],"g":{"na":2,"ax":0,"wa":1,"ns":1,"pos":1147.5,"off":45,"L":185,"W":90,"Dp":45,"d":25,"sh":"c","sg":-1,"s0":1240,"o0":45},"box":[1055,0,0,1240,90,45]},{"id":"amwfofp502tpp","type":"notch","text":"","color":"#2f9bff","done":false,"t":1794616680708,"media":[],"view":{"yaw":-3.352,"pitch":0.736,"dist":1016,"t":[7923,-14750,-3787],"o":1,"exp":0,"clip":100,"a":1.832,"hl":[],"hk":[]},"pn":"E7","mi":15,"ms":"A|0|0|2000|45","pt":[100,45,45],"g":{"na":2,"ax":0,"wa":1,"ns":1,"pos":100,"off":45,"L":200,"W":90,"Dp":45,"d":25,"sh":"c","sg":1,"s0":0,"o0":45},"box":[0,0,0,200,90,45]},{"id":"amwfpgufl6ug6","type":"hole","text":"","color":"#c56bff","done":false,"t":1794618413841,"media":[],"view":{"yaw":-0.9,"pitch":0.52,"dist":784,"t":[7086,-11479,5102],"o":1,"exp":0,"clip":100,"a":1.832,"hl":[],"hk":[]},"pn":"E48","mi":7,"ms":"C|0|2708|840|45","pt":[198,45,2753],"g":{"na":2,"ax":0,"wa":1,"ns":1,"pos":198,"off":45,"L":100,"W":90,"Dp":20,"d":25,"sh":"c"},"box":[185.5,32.5,2708,210.5,57.5,2753]},{"id":"amwfphm31u3k3","type":"hole","text":"","color":"#c56bff","done":false,"t":1794618449677,"media":[],"view":{"yaw":-0.872,"pitch":0.788,"dist":443,"t":[8142,-13485,2573],"o":1,"exp":0,"clip":100,"a":1.832,"hl":[],"hk":[]},"pn":"E47","mi":15,"ms":"D|3836|45|45|2618","pt":[3858.5,90,230],"g":{"na":1,"ax":2,"wa":0,"ns":1,"pos":185,"off":22.5,"L":100,"W":45,"Dp":20,"d":25,"sh":"c"},"box":[3846,0,217.5,3871,90,242.5]},{"id":"amwfpjb1nop16","type":"notch","text":"","color":"#2f9bff","done":false,"t":1794618528683,"media":[],"view":{"yaw":2.048,"pitch":0.828,"dist":1624,"t":[8482,-9142,-2903],"o":1,"exp":0,"clip":100,"a":1.832,"hl":[],"hk":[]},"pn":"E1","mi":1,"ms":"G|0|2415|5850|45","pt":[4866,45,2460],"g":{"na":2,"ax":0,"wa":1,"ns":1,"pos":4866,"off":45,"L":168,"W":90,"Dp":20,"d":25,"sh":"c","sg":-1,"s0":4950,"o0":45},"box":[4782,0,2440,4950,90,2460]},{"id":"amwfq0k4qzhyb","type":"hl","text":"这是什么","color":"#ff453a","done":false,"t":1794619333610,"media":[],"view":{"yaw":-4,"pitch":0.4306,"dist":3729,"t":[7469,-5954,2071],"o":1,"exp":0,"clip":100,"a":1.832,"hl":[],"hk":[]},"pn":"E28","mi":13,"ms":"E|2110|45|45|2858","pt":[2138.8,90,415.7]},{"id":"amwfq38qnmgbo","type":"dim","text":"测量","color":"#19d3c5","done":false,"t":1794619458815,"media":[],"view":{"yaw":-2.152,"pitch":0.6626,"dist":3729,"t":[5418,-23376,5888],"o":1,"exp":0,"clip":100,"a":1.832,"hl":[],"hk":[]},"pts":[{"pn":"E13","p":[804,90,0]},{"pn":"E13","p":[697,90,45]},{"pn":"E13","p":[342,90,45]},{"pn":"E13","p":[0,90,45]}],"pn":"E13","dir":[1,0,0],"show":"ar","chain":true,"off":-165,"ov":[0,-1,0],"flip":false}]}</script>
 
 <script>
 /* 整页的原始源码，趁什么都还没动先抓下来：「保存 HTML」时把标注那一块换掉再另存 */
@@ -404,12 +447,15 @@ const VS=`
 attribute vec3 aPos; attribute vec3 aNrm; attribute vec3 aCol; attribute float aId;
 attribute vec2 aExp;
 uniform mat4 uMVP; uniform float uExpK; uniform float uZBias;
-uniform vec3 uEye; uniform vec3 uFwd; uniform float uOrtho;
-varying vec3 vNrm; varying vec3 vCol; varying vec3 vId; varying float vZ;
+uniform vec3 uEye; uniform vec3 uFwd; uniform float uOrtho; uniform vec4 uClip;
+varying vec3 vNrm; varying vec3 vCol; varying vec3 vId; varying float vCut;
 vec3 idcol(float i){ float r=mod(i,256.0); float g=mod(floor(i/256.0),256.0);
   float b=floor(i/65536.0); return vec3(r,g,b)/255.0; }
 void main(){
   vec3 p=aPos; p.xy += aExp*uExpK;
+  /* 剖切：这一点在剖切面的哪一侧、离多远（米 —— 手机上片元里的数只有十几位精度，毫米数太大）。
+     在这里按高精度算好再插值；不剖切时传进来的是 (0,0,0,1)，处处是负的 */
+  vCut=(dot(p,uClip.xyz)-uClip.w)*0.001;
   /* 边线沿视线朝镜头挪 uZBias 毫米 —— 屏幕位置不变，只是深度靠前一点：
      赢得过自己贴着的面，赢不过前方哪怕几毫米厚的实体，被挡住的线就看不见。
      偏置按世界毫米给、不随远近变（旧做法在裁剪空间加常数，透视时远处
@@ -417,14 +463,14 @@ void main(){
      放大，侧立窄面后面的线全漏）。 */
   if(uZBias>0.0){ p += (uOrtho>0.5 ? -uFwd : normalize(uEye-p))*uZBias; }
   gl_Position=uMVP*vec4(p,1.0);
-  vNrm=aNrm; vCol=aCol; vId=idcol(aId); vZ=aPos.z;
+  vNrm=aNrm; vCol=aCol; vId=idcol(aId);
 }`;
 const FS=`
 precision mediump float;
-varying vec3 vNrm; varying vec3 vCol; varying vec3 vId; varying float vZ;
-uniform float uPick; uniform float uClip; uniform float uLine;
+varying vec3 vNrm; varying vec3 vCol; varying vec3 vId; varying float vCut;
+uniform float uPick; uniform float uLine;
 void main(){
-  if(vZ>uClip) discard;
+  if(vCut>0.0) discard;
   if(uPick>0.5){ gl_FragColor=vec4(vId,1.0); return; }
   if(uLine>0.5){ gl_FragColor=vec4(0.22,0.17,0.11,1.0); return; }
   vec3 n=normalize(vNrm);
@@ -475,8 +521,16 @@ function rebuild(){
 /* ---------- 相机 ---------- */
 /* 边线深度偏置（世界毫米）：必须小于最薄的遮挡物 —— 拉撑板 7.5~10mm */
 const EDGE_BIAS_MM=2.0;
-let yaw=-0.9,pitch=0.62,dist=radius*2.6,pan=[0,0,0],wire=false,clipZ=1e9,expK=0,
+/* roll：镜头绕着自己的视线转了多少。平常是 0（屏幕的上方就是模型的 Z）；三点定出来的视角，X 轴不一定是水平的，
+   要让它朝右就得转这一下。wire / edgesOn：线框、边线的开关早先在侧栏里，用户（2026-11-15）让去掉了 ——
+   固定成「实体 + 边线」 */
+let yaw=-0.9,pitch=0.62,roll=0,dist=radius*2.6,pan=[0,0,0],wire=false,expK=0,
     orthoOn=true,edgesOn=true;
+/* 剖切面：CN·P > CD 的那一半不画。CN 是单位向量 —— 现在用着的那个视角的 Z 轴（朝着看的人），所以剖切面
+   往屏幕里推就是 CD 变小；P 是画出来的位置（带爆炸）。clipOn=false：不剖切 */
+let CN=[0,0,1], CD=0, clipOn=false;
+function setClip(n,d){clipOn=!!n; if(n){CN=n.slice();CD=d}}
+function cutW(W){return clipOn&&W[0]*CN[0]+W[1]*CN[1]+W[2]*CN[2]>CD+1e-6}        // 这个世界点被切掉了
 function eye(){
   const cp=Math.cos(pitch),sp=Math.sin(pitch);
   return [center[0]+pan[0]+dist*cp*Math.cos(yaw),
@@ -508,11 +562,11 @@ function draw(pick){
   const zf=orthoOn?sp.dc+sp.R:Math.max(sp.dc+sp.R,zn*2);
   const proj=orthoOn?orthoM(dist*Math.tan(0.36),w/h,zn,zf)
                     :persp(0.72,w/h,zn,zf);
-  const mvp=mul(proj,lookAt(e,c,[0,0,1]));
+  const mvp=mul(proj,lookAt(e,c,camBasis().y));
   gl.useProgram(P);
   gl.uniformMatrix4fv(loc.mvp,false,new Float32Array(mvp));
   gl.uniform1f(loc.pick,pick?1:0);
-  gl.uniform1f(loc.clip,clipZ);
+  if(clipOn) gl.uniform4f(loc.clip,CN[0],CN[1],CN[2],CD); else gl.uniform4f(loc.clip,0,0,0,1);
   gl.uniform1f(loc.expk,expK);
   const fw=[c[0]-e[0],c[1]-e[1],c[2]-e[2]], fl=Math.hypot(fw[0],fw[1],fw[2])||1;
   gl.uniform3f(loc.eye,e[0],e[1],e[2]);
@@ -556,10 +610,9 @@ const TOUCH=matchMedia('(pointer: coarse)').matches;   // 触屏为主：底栏�
 const ptrs=new Map();               // pointerId -> {x,y}
 let gest=null, raf=0;               // gest：一次按下到全部抬起
 function redraw(){ if(!raf) raf=requestAnimationFrame(()=>{raf=0;draw(false)}); }
-function panBy(dx,dy,s){ const cy=Math.cos(yaw),sy=Math.sin(yaw);
-  pan[0]+= (sy*dx - cy*dy*Math.sin(pitch))*s;
-  pan[1]+=(-cy*dx - sy*dy*Math.sin(pitch))*s;
-  pan[2]+= dy*Math.cos(pitch)*s; }
+/* 画面跟着手走：屏幕上往右 dx、往下 dy 个像素，目标点就往左、往上挪（s：每像素合多少毫米） */
+function panBy(dx,dy,s){ const b=camBasis();
+  for(let i=0;i<3;i++) pan[i]+=(-dx*b.x[i]+dy*b.y[i])*s; }
 function zoomTo(d){ return Math.max(radius*0.05,Math.min(radius*40,d)); }
 function two(){ const [p,q]=ptrs.values();
   return {x:(p.x+q.x)/2, y:(p.y+q.y)/2, d:Math.hypot(p.x-q.x,p.y-q.y)||1}; }
@@ -609,6 +662,9 @@ function hold(g){const cb=camBasis();
   pan=[0,1,2].map(i=>g.P[i]-g.s[0]*cb.x[i]-g.s[1]*cb.y[i]-g.s[2]*cb.z[i]-center[i])}
 /* 绕着抓住的那一点转（没抓就是绕目标点） */
 function orbitBy(dx,dy,g){
+  /* 镜头带着滚转（三点定出来的视角）时，屏幕上的左右、上下不再是模型的水平、竖直：先把拖的方向换回去，
+     顺着屏幕上地平线的方向拖才是绕着 Z 转 */
+  if(roll){const c=Math.cos(roll), s=Math.sin(roll), x=dx*c+dy*s; dy=dy*c-dx*s; dx=x}
   yaw-=dx*0.006; pitch=Math.max(-1.5706,Math.min(1.5706,pitch+dy*0.006)); if(g) hold(g)}
 /* 以屏幕上 (cx,cy) 指着的那一点为中心，把镜头距离缩放到 nd：那一点在屏幕上不动。正交投影只和屏幕
    位置有关；透视还要看那一点有多深，所以得知道它是哪一点（P，没给就现找） */
@@ -781,7 +837,7 @@ function hud(){
       i.onkeydown=e=>{if(e.key!=='Enter') return;e.preventDefault();e.stopPropagation();
         if(i.value.trim())applyLen(i.value);else if(empty)empty()};
       btn('确定',()=>applyLen(i.value))};
-    add(el('b',null,dm?(tool.chain?'连续测量':'单次测量'):TYPES[tool.type])).style.color='var(--acc)';
+    add(el('b',null,dm?(tool.chain?'连续测量':'单次测量'):tool.type==='view'?'三点定义视角':TYPES[tool.type])).style.color='var(--acc)';
     const gd=guideTool();
     if(gd&&guided()){
       /* 有引导点：读数从最后一个引导点量起，这一排管引导线 —— 锁方向、输入长度、退一个引导点 */
@@ -836,9 +892,15 @@ function hud(){
       if(NARROW.matches) add(el('span','br'));          // 手机上另起一行，「长度」两个字别和输入框拆开
       num('长度');
       btn('撤销上一点',undo);
+    }else if(tool.type==='view'){
+      /* 三点定一个面：原点、X 轴上一点、Y 轴那一侧的一点。定出来以后面朝这个面看：X 朝右、Y 朝上、Z 朝着自己 */
+      const n=tool.pts.length;
+      add(el('span','tip',(n===0?'点第 1 个点：原点':n===1?'点第 2 个点：X 轴朝哪（看过去时朝右）':'点第 3 个点：Y 轴朝哪（看过去时朝上）')
+        +'。自动吸附顶点、中点、边线'));
+      if(n)btn('撤销上一点',undo);
     }else add(el('span','tip',TIPS[tool.type]));
-    /* 文件标注平常点在模型上；和哪儿都不相干的文件（整套图纸之类）可以不定位置，只进清单 */
-    if(tool.type==='doc') btn('不定位置',()=>{endTool();addDoc({})});
+    /* 标注平常点在模型上；和哪儿都不相干的（整套图纸之类）可以不定位置，只进清单 */
+    if(tool.type==='note') btn('不定位置',()=>{endTool();addAnn({type:'note'})});
     /* 引导点的开关：亮着的时候点下去的是引导点。电脑上按住 Ctrl 就是它亮着；手机上没有 Ctrl，点它 */
     if(gd){const x=btn('引导点',()=>{tool.gBtn=!tool.gBtn;again()},guideOn()?'on':'');x.id='gBtn';
       x.title='亮着的时候点下去的是引导点，不是真正的点；读数从引导点量起。电脑上按住 '+(MAC?'⌘':'Ctrl')+' 也一样'}
@@ -883,30 +945,14 @@ syncFilters();
 document.getElementById('sub').textContent=
   `${D.panels.length} 块 panel · ${pieces.length} 根构件`;
 
-document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{
-  const v=b.dataset.view;
-  if(v==='iso'){yaw=-0.9;pitch=0.62}
-  /* 俯视要真垂直（正交下与平面图完全一致）；1.5706 而不是 PI/2 是避开
-     lookAt 在极点的退化。正视/侧视同理取纯水平。 */
-  if(v==='top'){yaw=-Math.PI/2;pitch=1.5706}
-  if(v==='front'){yaw=-Math.PI/2;pitch=0}
-  if(v==='side'){yaw=0;pitch=0}
-  draw(false);
-});
-document.getElementById('bWire').onclick=e=>{wire=!wire;e.target.classList.toggle('on',wire);draw(false)};
+/* 用户（2026-11-15）：视图只留「俯视」和「正交」，轴测、正视、侧视、线框、边线、全览都去掉；别的方向用
+   「三点定义视角」自己定（见下面「视角」一节）。俯视：真垂直（正交下与平面图完全一致） */
+document.getElementById('bTop').onclick=()=>vwGo('top');
 document.getElementById('bProj').onclick=e=>{orthoOn=!orthoOn;
  e.target.classList.toggle('on',orthoOn);e.target.textContent=orthoOn?'正交':'透视';draw(false)};
-document.getElementById('bEdge').onclick=e=>{edgesOn=!edgesOn;
- e.target.classList.toggle('on',edgesOn);draw(false)};
-document.getElementById('bFit').onclick=()=>{pan=[0,0,0];dist=radius*2.6;draw(false)};
 document.getElementById('exp').oninput=e=>{
   expK=e.target.value/100*radius*0.55;
-  document.getElementById('expv').textContent=e.target.value+'%';rebuildMarks();draw(false)};
-document.getElementById('clip').oninput=e=>{
-  const t=e.target.value/100;
-  clipZ = t>=1 ? 1e9 : bb[2]+(bb[5]-bb[2])*t;
-  document.getElementById('clipv').textContent = t>=1?'全部':Math.round(clipZ)+' mm';
-  draw(false)};
+  document.getElementById('expv').textContent=e.target.value+'%';vwClip();renderViews();rebuildMarks();draw(false)};
 
 /* ====================== 标注 ======================
    用户在模型上做的记号：哪根木料尺寸不对（构件高亮）、哪里开槽口、哪里开洞、
@@ -921,15 +967,37 @@ document.getElementById('clip').oninput=e=>{
    保存：每次改动自动存一份浏览器本地草稿；「保存 HTML」把标注写回本页源码（SRC 是
    脚本开头抓下来的原始页面）另存一份 —— 还是单个文件，发给别人打开就带着标注。
    标注里的字来自用户或别人给的文件，一律用 textContent 放进页面，不拼 HTML。 */
-const TYPES={hl:'构件高亮',notch:'槽口',hole:'开洞',dim:'尺寸',note:'文字',doc:'文件'};
+const TYPES={hl:'构件高亮',notch:'槽口',hole:'开洞',dim:'尺寸',note:'标注'};
 /* 八种颜色，顺序是用户定的：绿 蓝 黄 橙 红 青 紫 黑 */
 const COLORS=['#3ddc5f','#2f9bff','#ffd60a','#ff9f0a','#ff453a','#19d3c5','#c56bff','#111111'];
 const CNAME=['绿','蓝','黄','橙','红','青','紫','黑'];
-const DEFCOL={hl:4,notch:1,hole:6,dim:5,note:0,doc:0};
-const PH={note:'写在这里；写上网址会变成能点的链接'};
+const DEFCOL={hl:4,notch:1,hole:6,dim:5,note:0};
+const DONEC='#c9c9c9';                         // 已处理的：统一显示成浅灰，半透明
+const PH={note:'写了说明，模型上才有那个 i；写上网址会变成能点的链接'};
 const TIPS={hl:'点一下要标的那根木料',notch:'点一下开槽的起点（自动吸附顶点、中点、边线），再往要开的方向拉',
-  hole:'点一下开洞的位置（洞从点中的那个面打穿）',note:'点一下要写字的位置（自动吸附顶点、中点、边线）',
-  doc:'点一下这份文件要标在哪（自动吸附顶点、中点、边线）'};
+  hole:'点一下开洞的位置（洞从点中的那个面打穿）',note:'点一下要标的位置（自动吸附顶点、中点、边线）'};
+/* 能点的小图标：眼睛（显示着）/ 划掉的眼睛（藏着）、铅笔（改名）、叉（删除）、箭头（折叠） */
+const ICON={
+  eye:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>',
+  eyeOff:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 5.1A10.6 10.6 0 0112 5c6.4 0 10 7 10 7a17.6 17.6 0 01-3.2 4.2M6.5 6.6C3.7 8.5 2 12 2 12s3.6 7 10 7c1.7 0 3.2-.4 4.5-1.1"/><path d="M9.9 9.9a3 3 0 004.2 4.2"/></svg>',
+  pen:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>',
+  x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  down:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>',
+  right:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>'};
+/* 一个只有图标的小按钮（图标是上面写死的那几个，不掺用户的字） */
+function ibtn(ic,tip,fn,cls){const b=el('button','ib'+(cls?' '+cls:''));b.type='button';b.innerHTML=ICON[ic];
+  b.title=tip;b.setAttribute('aria-label',tip);b.onclick=e=>{e.stopPropagation();fn(e)};return b}
+/* 一、二、三……（默认的名字用：无标题一、视角二、群组三） */
+const CNUM='零一二三四五六七八九';
+function cn(n){
+  if(n<10) return CNUM[n];
+  if(n<20) return '十'+(n%10?CNUM[n%10]:'');
+  if(n<100) return CNUM[Math.floor(n/10)]+'十'+(n%10?CNUM[n%10]:'');
+  if(n<1000){const r=n%100;return CNUM[Math.floor(n/100)]+'百'+(r?(r<10?'零'+CNUM[r]:(r<20?'一':'')+cn(r)):'')}
+  return String(n)}
+/* pre + 一 / 二 / 三…… 里头一个还没人用的。用户：「一开始创建了两个视角，视角一、视角二，然后我把视角二改成了
+   南侧视角，再创建一个视角的话，我希望它能接着现有的视角排，还是命名为视角二，而不是视角三」 */
+function freeName(pre,used){const u=new Set(used);for(let n=1;;n++){const s=pre+cn(n);if(!u.has(s)) return s}}
 const AXN=['距左端','距内面','距下端'], AXW=['距左边','距内面','距下边'];
 /* 模型的三根轴 X / Y / Z（Z 朝上）—— 取尺寸时方向往它们上面吸、锁；不画出来，只在吸上的时候
    把那根线换成对应的颜色 */
@@ -952,15 +1020,23 @@ const PCEN=PBOX.map(q=>q?[0,1,2].map(k=>(q.lo[k]+q.hi[k])/2):[0,0,0]);
 const PKIN=D.panels.map(()=>new Set()); pieces.forEach(p=>PKIN[p.pi].add(p.ki));
 function panelShown(pi){if(!showLv.has(D.panels[pi].lv)) return false;
   for(const k of PKIN[pi]) if(showKd.has(k)) return true; return false}
-/* 视线 ray 从哪儿进到第 pi 块板的外包盒里（视线上的距离；不穿过就是 null）。剖切面以上的那一截不算 */
+/* 剖切面换算到第 pi 块板的局部坐标里：n·q > d 的那一半被切掉（没在剖切就是 null） */
+function clipL(pi){ if(!clipOn) return null; const t=D.panels[pi].tr, e=PEXP[pi];
+  return {n:[CN[0]*t[3]+CN[1]*t[4],CN[0]*t[5]+CN[1]*t[6],CN[2]],
+          d:CD-(CN[0]*(t[0]+e[0]*expK)+CN[1]*(t[1]+e[1]*expK)+CN[2]*t[2])}}
+/* 视线 ray 从哪儿进到第 pi 块板的外包盒里（视线上的距离；不穿过就是 null）。被剖切面切掉的那一截不算 */
 function boxT(pi,ray){const b=PBOX[pi]; if(!b) return null;
-  const o=W2L(pi,ray.o), d=D2L(pi,ray.d), zc=clipZ-D.panels[pi].tr[2]; let t0=-1e18, t1=1e18;
-  for(let k=0;k<3;k++){const lo=b.lo[k], hi=k===2?Math.min(b.hi[2],zc):b.hi[k]; if(hi<lo) return null;
+  const o=W2L(pi,ray.o), d=D2L(pi,ray.d), cl=clipL(pi); let t0=-1e18, t1=1e18;
+  for(let k=0;k<3;k++){const lo=b.lo[k], hi=b.hi[k];
     if(Math.abs(d[k])<1e-9){if(o[k]<lo||o[k]>hi) return null; continue}
     let a=(lo-o[k])/d[k], c=(hi-o[k])/d[k]; if(a>c){const x=a;a=c;c=x}
     if(a>t0)t0=a; if(c<t1)t1=c; if(t0>t1) return null}
+  if(cl){const a=V.dot(cl.n,d), r=cl.d-V.dot(cl.n,o);       // 留下的是 n·(o+d·t) <= d 的那一段
+    if(Math.abs(a)<1e-9){if(r<0) return null}
+    else if(a>0){if(r/a<t1)t1=r/a} else if(r/a>t0)t0=r/a;
+    if(t0>t1) return null}
   return t1<=1e-6?null:Math.max(t0,0)}
-const expEl=document.getElementById('exp'), clipEl=document.getElementById('clip');
+const expEl=document.getElementById('exp');
 const ov=document.getElementById('ov'), ox=ov.getContext('2d');
 const tog2=document.getElementById('tog2');
 
@@ -1000,8 +1076,12 @@ function D2L(pi,d){const t=D.panels[pi].tr, k=t[3]*t[6]-t[4]*t[5];
 function W2L(pi,w){const t=D.panels[pi].tr,e=PEXP[pi];
   return D2L(pi,[w[0]-t[0]-e[0]*expK, w[1]-t[1]-e[1]*expK, w[2]-t[2]])}
 function W2L0(pi,w){const t=D.panels[pi].tr;return D2L(pi,[w[0]-t[0],w[1]-t[1],w[2]-t[2]])}   // 不带爆炸
+/* 镜头的三根轴（世界方向）：x 朝屏幕右、y 朝屏幕上、z 朝着看的人；e 镜头的位置。带滚转时 x、y 绕着 z 转过 roll */
 function camBasis(){const e=eye(), c=[center[0]+pan[0],center[1]+pan[1],center[2]+pan[2]];
-  const z=V.norm(V.sub(e,c)), x=V.norm(V.cross([0,0,1],z)), y=V.cross(z,x);return {e,x,y,z}}
+  const z=V.norm(V.sub(e,c)), x=V.norm(V.cross([0,0,1],z)), y=V.cross(z,x);
+  if(!roll) return {e,x,y,z};
+  const cr=Math.cos(roll), sr=Math.sin(roll);
+  return {e,z,x:[0,1,2].map(i=>x[i]*cr+y[i]*sr),y:[0,1,2].map(i=>y[i]*cr-x[i]*sr)}}
 /* 屏幕上一点（CSS 像素）对应的世界射线 —— 与 draw() 里的投影同一套参数 */
 function rayAt(cx,cy){
   const r=cv.getBoundingClientRect(), sx=(cx-r.left)/r.width*2-1, sy=1-(cy-r.top)/r.height*2;
@@ -1048,9 +1128,10 @@ function raySeg(o,d,A0,B0){const u=V.sub(B0,A0), w=V.sub(A0,o);
    全是板局部坐标。 */
 function rawHit(p,cx,cy){
   const pi=p.pi, ray=rayAt(cx,cy), o=W2L(pi,ray.o), d=D2L(pi,ray.d);
-  const b=boxOf(p), ring=ringOf(p), y0=b.lo[1], y1=b.hi[1], zmax=clipZ-D.panels[pi].tr[2]+1e-6;
+  const b=boxOf(p), ring=ringOf(p), y0=b.lo[1], y1=b.hi[1], cl=clipL(pi);
   let best=null;
-  const take=(t,na)=>{if(t>1e-6&&o[2]+d[2]*t<=zmax&&(!best||t<best.t))best={t,na}};
+  const cut=t=>cl&&cl.n[0]*(o[0]+d[0]*t)+cl.n[1]*(o[1]+d[1]*t)+cl.n[2]*(o[2]+d[2]*t)>cl.d+1e-6,       // 打中的这一点被剖掉了
+        take=(t,na)=>{if(t>1e-6&&!cut(t)&&(!best||t<best.t))best={t,na}};
   if(Math.abs(d[1])>1e-9) for(const yc of [y0,y1]){const t=(yc-o[1])/d[1];
     if(inPoly(ring,o[0]+d[0]*t,o[2]+d[2]*t)) take(t,1)}
   for(let i=0;i<ring.length;i++){
@@ -1077,7 +1158,7 @@ function better(c,b){return !b||c.rank<b.rank||(c.rank===b.rank&&(c.dd<b.dd-.5||
    不用查，旁边的木料被别的挡住的点不吸。 */
 function snapOn(p,cx,cy,thr,ref,extra,seen){
   const pi=p.pi, ray=rayAt(cx,cy), o=W2L(pi,ray.o), d=D2L(pi,ray.d);
-  const b=boxOf(p), ring=ringOf(p), n=ring.length, y0=b.lo[1], y1=b.hi[1], zmax=clipZ-D.panels[pi].tr[2]+1e-6;
+  const b=boxOf(p), ring=ringOf(p), n=ring.length, y0=b.lo[1], y1=b.hi[1], cl=clipL(pi);
   const cb=camBasis(); let best=null, ar=0;
   for(let i=0;i<n;i++){const a=ring[i], c=ring[(i+1)%n];ar+=a[0]*c[1]-c[0]*a[1]}
   /* 哪些面朝着镜头。ev = 从这一点看向镜头的方向（板局部）；fY：y0 那面 s=-1、y1 那面 s=+1；
@@ -1085,7 +1166,7 @@ function snapOn(p,cx,cy,thr,ref,extra,seen){
   const sg=ar>0?1:-1, ev=q=>orthoOn?[-d[0],-d[1],-d[2]]:[o[0]-q[0],o[1]-q[1],o[2]-q[2]],
         fY=(q,k)=>ev(q)[1]*k>0,
         fS=(i,q)=>{const a=ring[(i+n)%n], c=ring[(i+1)%n], e=ev(q);return ((c[1]-a[1])*e[0]-(c[0]-a[0])*e[2])*sg>0};
-  const tryPt=(q,kind,rank)=>{ if(q[2]>zmax) return; const w=L2W(pi,q), s=w2s(w); if(s[2]<=0) return;
+  const tryPt=(q,kind,rank)=>{ if(cl&&V.dot(cl.n,q)>cl.d+1e-6) return; const w=L2W(pi,q), s=w2s(w); if(s[2]<=0) return;
     const dd=Math.hypot(s[0]-cx,s[1]-cy); if(dd>=thr||(seen&&!seen(s[0],s[1]))) return;
     const c={q,kind,rank,dd,z:-V.dot(V.sub(w,cb.e),cb.z)}; if(better(c,best)) best=c };
   /* 这根木料看得见的棱：两个面上的轮廓各一圈，加上连着两个面的那几条 */
@@ -1115,18 +1196,38 @@ function hitInfo(p,cx,cy,touch,ref,extra){
   h.loc=c?c.q:h.raw; h.snap=c?c.kind:'f'; return h;
 }
 
-/* ---------- 标注和「画在模型上的东西」分开 ---------- */
-/* 用户（2026-11-14）：「那些测量、高亮、开槽、开洞之类的，不参与编号，编号只是对标注生效。标注分为文字和
-   文件，文字那就是文字，如果输入的文字是个链接，也能识别为链接，点了就能跳转。文件嘛，就是包含 PDF、图片、
-   视频这些。既然那些测量、开槽之类的没有编号，它们本身也不能添加文字说明 —— 需要的话通过标注另外添加，
-   但是更改颜色是保留的。」
-   · 标注 = 文字（note）、文件（doc）：有编号，点在模型上（老版本的「资料」没有位置，照样认）；
-   · 测量（dim）、高亮（hl）、槽口（notch）、开洞（hole）：画在模型上的东西，不编号、不带说明、不带附件，
-     颜色照样能改。
-   都还放在同一个数组 A 里（撤销、保存、导入导出不用分两套），编号只数标注。 */
-function isNote(an){return an.type==='note'||an.type==='doc'}
+/* ---------- 标题、说明、群组 ---------- */
+/* 用户（2026-11-15）把上一版「标注编号、画上去的东西不编号」改掉了：「现在就没有编号这个说法。创建的每一个
+   标注或者测量，它开始的名字都是叫无标题一或无标题二，依次创建；如果是无标题默认不显示小圆圈，只有我们自己
+   把无标题改了名字之后，它才会显示。我们可以改成 A B C D、1234 或者是文字说明，那如果是文字说明的话，这个
+   圆圈就会变成椭圆的，会被文字撑开。这些是标题，输入框里面写的东西叫说明。如果写了说明，才会有 information
+   的小按钮。文字标注和文件标注合二为一，都叫标注，说明输入框下面加一个上传文件按钮。无论是测量还是开槽，
+   每个小卡片都像一个 ToDo list：每个小卡片右上角加一个隐藏按钮，卡片可以分组；群组本身也可以隐藏和设置
+   颜色，群组作为父级 —— 群组隐藏，下面的小卡片全部隐藏；群组设置了颜色，下面小卡片的颜色就全部跟着改。
+   点击已处理，它就会自动被归纳到已处理那一个群组里面去，处理的项目在模型里统一显示为比较浅的透明灰色。」
+   于是五种东西（标注 note、构件高亮 hl、槽口 notch、开洞 hole、尺寸 dim）一个样：都有标题 title、说明 text、
+   文件 media、颜色、隐藏 hidden、已处理 done、所在的群组 grp（群组的 id，'' = 不分组），都进清单。
+   · 标题：做出来时叫「无标题 N」（N 取还没人用的最小的那个）。还叫这个名字的不在模型上画标题；
+   · 群组 G：{id,name,color（'' = 不指定，各用各的颜色）,hidden,fold（清单里折起来）}；
+   · 显示成什么颜色、显不显示，看 effColor / effHidden：已处理的一律浅灰；群组指定了颜色就用群组的；
+     自己藏了、所在群组藏了、已处理那一组藏了（doneHidden），都不画。
+   isNote：只有「标注」（老版本的文字 / 文件）—— 它是点在模型上的一个点，记着做它时的视角。 */
+function isNote(an){return an.type==='note'}
 function placed(an){return an.type==='dim'||typeof an.pn==='string'}       // 在模型上有位置
-function numOf(i){let n=0;for(let k=0;k<=i;k++)if(isNote(A[k]))n++;return n}      // 第 i 条是几号标注
+let G=[], doneHidden=false, doneFold=false;
+let VW=[], vwOn='top', topClip=null;          // 三点定出来的视角、现在用着哪个、俯视的剖切标高（见「视角」一节）
+const UNT=/^无标题[零一二三四五六七八九十百千0-9]+$/;
+function untitled(an){return !an.title||UNT.test(an.title)}                // 还是默认的名字：模型上不画标题
+function newTitle(){return freeName('无标题',A.map(a=>a.title))}
+function nameAll(){A.forEach(a=>{if(!a.title)a.title=newTitle()})}          // 读进来没有标题的（老数据）：按先后补上
+function grpOf(an){return an.grp?(G.find(g=>g.id===an.grp)||null):null}
+function effColor(an){if(an.done) return DONEC;const g=grpOf(an);return g&&g.color?g.color:an.color}
+function effHidden(an){if(an.hidden) return true;if(an.done) return doneHidden;const g=grpOf(an);return !!(g&&g.hidden)}
+function hasInfo(an){return !!((an.text&&an.text.trim())||(an.media&&an.media.length))}     // 写了说明或者挂了文件
+function normGroup(o){
+  if(!o||typeof o!=='object'||!o.id) return null;
+  return {id:String(o.id),name:String(o.name||'').trim().slice(0,40)||'群组',
+    color:/^#[0-9a-f]{6}$/i.test(o.color)?o.color:'',hidden:!!o.hidden,fold:!!o.fold}}
 /* 文字里的网址（http / https 开头，或者 www. 开头）：拆成一段一段，带 u 的那几段是链接 */
 const URLRE=/(https?:\/\/[^\s<>"'，。；、）】]+|www\.[^\s<>"'，。；、）】]+)/gi;
 function linkParts(s){const r=[];let k=0;s=String(s||'');
@@ -1139,35 +1240,9 @@ function linkEl(p){const a=el('a',null,p.t);a.href=p.u;a.target='_blank';a.rel='
 /* 把一段文字放进 host：网址做成能点的链接（新开一页），其余照原样。一律建节点，不拼 HTML */
 function putText(host,s){host.textContent='';
   linkParts(s).forEach(p=>host.appendChild(p.u?linkEl(p):document.createTextNode(p.t)))}
-/* 一条读进来的数据 → 一条或几条。老版本里测量、高亮、槽口、开洞可以带说明和附件，文字可以带附件，
-   「资料」可以带说明和链接 —— 都拆出来，一样不丢：
-   · 说明、链接 → 一条文字标注（链接写成网址，一行一个）；附件 → 一条文件标注；位置都在原来那里；
-   · 拆出来的条目 id 是原来的 id 加 ~t / ~f：同一份文件导入两次不会重复，拆过一次的再读也不会再拆。 */
-function normAll(o){
-  const an=norm(o); if(!an) return [];
-  const out=[an], raw=String(o.text||'').trim(),
-        med=(Array.isArray(o.media)?o.media:[]).map(normMedia).filter(Boolean),
-        files=med.filter(m=>m.k!=='link'),
-        ltxt=med.filter(m=>m.k==='link').map(m=>(m.n&&m.n!==m.u?m.n+' ':'')+m.u).join('\n');
-  const pos=an.type==='dim'?{pn:an.pts[0].pn,pt:an.pts[0].p.slice(),mi:-1,ms:''}
-           :typeof an.pn==='string'?{pn:an.pn,pt:an.pt.slice(),mi:an.mi,ms:an.ms}:{},
-        mk=(sfx,more)=>norm(Object.assign({id:an.id+sfx,t:an.t,done:an.done,view:o.view},pos,more));
-  if(an.type==='note'){
-    if(ltxt) an.text=(an.text?an.text+'\n':'')+ltxt;
-    if(files.length) out.push(mk('~f',{type:'doc',media:files}));
-  }else{
-    const t=[raw,ltxt].filter(Boolean).join('\n');
-    if(t) out.push(mk('~t',{type:'note',text:t}));
-    if(an.type!=='doc'&&files.length) out.push(mk('~f',{type:'doc',media:files}));
-  }
-  return out.filter(Boolean);
-}
-/* 文件标注在模型上、清单里显示成什么：头一个文件的名字，多了写「等 N 个」 */
-function fileLabel(an){const n=an.media.length;
-  if(!n) return '还没有文件';
-  const s=an.media[0].n||'未命名';return (s.length>16?s.slice(0,15)+'…':s)+(n>1?' 等 '+n+' 个':'')}
-/* 加一条文件标注，接着让用户选文件（o 带着位置就标在那儿，不带就只进清单） */
-function addDoc(o){const n=A.length;addAnn(Object.assign({type:'doc'},o));if(A.length>n)pickFiles(A[A.length-1],'')}
+/* 一条读进来的数据 → 零条或一条。早先几版这里要把说明、附件拆成单独的标注（那时画上去的东西不能带说明）；
+   现在什么都能带说明和文件，原样留着。老版本的「链接」附件写成说明里的网址（见 norm） */
+function normAll(o){const an=norm(o);return an?[an]:[]}
 /* 屏幕上一堆点的凸包（逆时针 / 顺时针无所谓，hitBadge 里用射线法判点在不在里面） */
 function hull2(P){
   const p=P.map(q=>[q[0],q[1]]).sort((a,b)=>a[0]-b[0]||a[1]-b[1]), cr=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]);
@@ -1198,21 +1273,27 @@ function normMedia(m){
   return {k:ty.startsWith('image/')?'img':ty.startsWith('video/')?'vid':ty.startsWith('audio/')?'aud':'file',n,d:m.d};
 }
 function norm(o){
-  if(!o||typeof o!=='object'||!TYPES.hasOwnProperty(o.type)) return null;
-  /* 字只有「文字」标注有，附件只有「文件」标注有（链接不算文件，写在文字里）。测量、高亮、槽口、开洞
-     不带这些 —— 老数据里带着的，normAll 拆成单独的标注；它们也不记视角、没有「已处理」 */
-  const nt=o.type==='note'||o.type==='doc';
-  const an={id:String(o.id||nid()),type:o.type,text:o.type==='note'?String(o.text||'').slice(0,4000):'',
-    color:/^#[0-9a-f]{6}$/i.test(o.color)?o.color:COLORS[DEFCOL[o.type]],done:nt&&!!o.done,
-    t:num(o.t)?o.t:0,
-    media:o.type==='doc'?(Array.isArray(o.media)?o.media:[]).map(normMedia).filter(m=>m&&m.k!=='link'):[]};
+  if(!o||typeof o!=='object') return null;
+  const ty=o.type==='doc'?'note':o.type;                  // 老版本的「文件标注」：现在就是带文件的标注
+  if(!TYPES.hasOwnProperty(ty)) return null;
+  /* 标题、说明、文件、颜色、隐藏、已处理、群组：五种东西都有。附件里老版本的「链接」不算文件，
+     写成说明里的网址（一行一个） */
+  const nt=ty==='note', med=(Array.isArray(o.media)?o.media:[]).map(normMedia).filter(Boolean),
+        ltxt=med.filter(m=>m.k==='link').map(m=>(m.n&&m.n!==m.u?m.n+' ':'')+m.u).join('\n');
+  const an={id:String(o.id||nid()),type:ty,title:String(o.title||'').replace(/\s+/g,' ').trim().slice(0,60),
+    text:[String(o.text||''),ltxt].filter(Boolean).join('\n').slice(0,4000),
+    color:/^#[0-9a-f]{6}$/i.test(o.color)?o.color:COLORS[DEFCOL[ty]],done:!!o.done,hidden:!!o.hidden,
+    grp:typeof o.grp==='string'?o.grp:'',t:num(o.t)?o.t:0,media:med.filter(m=>m.k!=='link')};
+  /* 做它时的画面只有「标注」记：cv / cd 是那时用着的视角和剖切深度（老数据是 clip：按高度的百分比） */
   const v=nt?o.view:null;
-  if(v&&num(v.yaw)&&num(v.pitch)&&num(v.dist)&&v.dist>0&&v3(v.t))
-    an.view={yaw:v.yaw,pitch:Math.max(-1.5706,Math.min(1.5706,v.pitch)),dist:v.dist,t:v.t.slice(),o:v.o?1:0,
-      exp:num(v.exp)?Math.max(0,Math.min(100,v.exp)):0,clip:num(v.clip)?Math.max(0,Math.min(100,v.clip)):100,
+  if(v&&num(v.yaw)&&num(v.pitch)&&num(v.dist)&&v.dist>0&&v3(v.t)){
+    an.view={yaw:v.yaw,pitch:Math.max(-1.5706,Math.min(1.5706,v.pitch)),roll:num(v.roll)?v.roll:0,dist:v.dist,t:v.t.slice(),o:v.o?1:0,
+      exp:num(v.exp)?Math.max(0,Math.min(100,v.exp)):0,
       a:num(v.a)&&v.a>0?v.a:0,
       hl:(Array.isArray(v.hl)?v.hl:[]).map(String),hk:(Array.isArray(v.hk)?v.hk:[]).map(String)};
-  if(o.type==='doc'||o.type==='note'){
+    if(typeof v.cv==='string'){an.view.cv=v.cv;an.view.cd=num(v.cd)?v.cd:null}
+    else an.view.clip=num(v.clip)?Math.max(0,Math.min(100,v.clip)):100}
+  if(nt){
     /* 标注点在模型上的某个位置；也可以没有位置（老版本的「资料」、提示条上的「不定位置」），那就只在清单里 */
     if(typeof o.pn==='string'&&v3(o.pt)){an.pn=o.pn;an.mi=Number.isInteger(o.mi)?o.mi:-1;an.ms=String(o.ms||'');an.pt=o.pt.slice()}
     return an}
@@ -1254,7 +1335,9 @@ function norm(o){
   }
   return an;
 }
-function pack(){return {v:1,job:D.job||'',rev:ANN0.rev||'0',items:A}}
+/* 存盘的那一份：标注 items、群组 groups、三点定出来的视角 views（各带着自己的剖切深度）、
+   已处理那一组藏没藏 / 折没折 */
+function pack(){return {v:2,job:D.job||'',rev:ANN0.rev||'0',items:A,groups:G,views:VW,st:{dh:doneHidden?1:0,df:doneFold?1:0}}}
 
 /* ---------- 槽口 / 开洞：由「点中的面 + 几个数」算出那一块 ---------- */
 /* na 点中的面的法线轴（槽往里开、洞沿它打穿），ax 木料长向，wa 剩下那个方向；
@@ -1330,7 +1413,7 @@ function anchorW(an){
   const pi=PIDX.get(an.pn); return pi==null?null:L2W(pi,an.pt);
 }
 function annVisible(an){
-  if(!placed(an)) return false;
+  if(!placed(an)||effHidden(an)) return false;
   const pi=PIDX.get(an.pn); if(pi==null||!showLv.has(D.panels[pi].lv)) return false;
   if(an.type==='dim') return an.pts.every(q=>PIDX.has(q.pn));
   const p=pieceOf(an); return !(p&&!showKd.has(p.ki));
@@ -1339,18 +1422,18 @@ function annVisible(an){
 /* ---------- 高亮块：WebGL 半透明实体 ---------- */
 const VS2=`
 attribute vec3 aPos; attribute vec4 aCol;
-uniform mat4 uMVP; uniform vec3 uEye; uniform vec3 uFwd; uniform float uOrtho; uniform float uZBias;
-varying vec4 vCol; varying float vZ;
+uniform mat4 uMVP; uniform vec3 uEye; uniform vec3 uFwd; uniform float uOrtho; uniform float uZBias; uniform vec4 uClip;
+varying vec4 vCol; varying float vCut;
 void main(){
   /* 与边线同一招：沿视线朝镜头挪几毫米，贴在木料表面的块赢得过那个面，
      赢不过前面隔着的另一根木料 */
   vec3 p=aPos+(uOrtho>0.5 ? -uFwd : normalize(uEye-aPos))*uZBias;
-  gl_Position=uMVP*vec4(p,1.0); vCol=aCol; vZ=aPos.z;
+  gl_Position=uMVP*vec4(p,1.0); vCol=aCol; vCut=(dot(aPos,uClip.xyz)-uClip.w)*0.001;
 }`;
 const FS2=`
 precision mediump float;
-varying vec4 vCol; varying float vZ; uniform float uClip; uniform float uA;
-void main(){ if(vZ>uClip) discard; gl_FragColor=vec4(vCol.rgb,vCol.a*uA); }`;
+varying vec4 vCol; varying float vCut; uniform float uA;
+void main(){ if(vCut>0.0) discard; gl_FragColor=vec4(vCol.rgb,vCol.a*uA); }`;
 const P2=prog(VS2,FS2);
 const loc2={pos:gl.getAttribLocation(P2,'aPos'),col:gl.getAttribLocation(P2,'aCol'),
   mvp:gl.getUniformLocation(P2,'uMVP'),eye:gl.getUniformLocation(P2,'uEye'),
@@ -1370,27 +1453,28 @@ function mkPrism(pi,ring,w0,w1,na,col,al,sides){
   for(let i=0;i<n;i++){const j=(i+1)%n;
     tri(lo[i],lo[j],hi[j]);tri(lo[i],hi[j],hi[i]);ln(lo[i],lo[j]);ln(hi[i],hi[j]);if(sides)ln(lo[i],hi[i])}
 }
-/* 整根木料罩上一层：按它的准确轮廓四面各放大 1mm */
-function hlPrism(p,col){
+/* 整根木料罩上一层：按它的准确轮廓四面各放大 1mm（k：再淡多少 —— 已处理的） */
+function hlPrism(p,col,k){
   const b=boxOf(p), cx=(b.lo[0]+b.hi[0])/2, cz=(b.lo[2]+b.hi[2])/2,
         kx=1+2/Math.max(1,b.hi[0]-b.lo[0]), kz=1+2/Math.max(1,b.hi[2]-b.lo[2]);
-  mkPrism(p.pi,ringOf(p).map(q=>[cx+(q[0]-cx)*kx,cz+(q[1]-cz)*kz]),b.lo[1]-1,b.hi[1]+1,1,col,.5,true);
+  mkPrism(p.pi,ringOf(p).map(q=>[cx+(q[0]-cx)*kx,cz+(q[1]-cz)*kz]),b.lo[1]-1,b.hi[1]+1,1,col,.5*(k||1),true);
 }
-/* 标注变了、过滤变了、爆炸量变了、点中的构件换了，都要重排一次（块的世界坐标带着爆炸位移） */
+/* 标注变了、过滤变了、爆炸量变了、点中的构件换了，都要重排一次（块的世界坐标带着爆炸位移）。
+   颜色照 effColor：已处理的是浅灰，再淡一半 */
 function rebuildMarks(){
   MK.pos.length=MK.col.length=MK.lpos.length=MK.lcol.length=0; MK.rng=[];
   A.forEach(an=>{
     const r={f0:MK.pos.length/3,l0:MK.lpos.length/3};
     if(annVisible(an)&&an.type!=='dim'&&!isNote(an)){
-      const pi=PIDX.get(an.pn), col=hex(an.color);
-      if(an.type==='hl'){const p=pieceOf(an); if(p) hlPrism(p,col)}
+      const pi=PIDX.get(an.pn), col=hex(effColor(an)), dk=an.done?.55:1;
+      if(an.type==='hl'){const p=pieceOf(an); if(p) hlPrism(p,col,dk)}
       else{
         const b=an.box, g=an.g, e=.5;
         if(an.type==='hole'&&g.sh==='c'){
           const o=[0,1,2].filter(k=>k!==g.na), c0=(b[o[0]]+b[o[0]+3])/2, c1=(b[o[1]]+b[o[1]+3])/2, ring=[];
           for(let k=0;k<24;k++){const t=k/24*6.283185307;ring.push([c0+Math.cos(t)*g.d/2,c1+Math.sin(t)*g.d/2])}
-          mkPrism(pi,ring,b[g.na]-e,b[g.na+3]+e,g.na,col,.7,false);
-        }else mkPrism(pi,[[b[0]-e,b[2]-e],[b[3]+e,b[2]-e],[b[3]+e,b[5]+e],[b[0]-e,b[5]+e]],b[1]-e,b[4]+e,1,col,.62,true);
+          mkPrism(pi,ring,b[g.na]-e,b[g.na+3]+e,g.na,col,.7*dk,false);
+        }else mkPrism(pi,[[b[0]-e,b[2]-e],[b[3]+e,b[2]-e],[b[3]+e,b[5]+e],[b[0]-e,b[5]+e]],b[1]-e,b[4]+e,1,col,.62*dk,true);
       }
     }
     r.f1=MK.pos.length/3; r.l1=MK.lpos.length/3; MK.rng.push(r);
@@ -1406,7 +1490,8 @@ function drawMarks(mvp,e,fw){
   gl.useProgram(P2);
   gl.uniformMatrix4fv(loc2.mvp,false,new Float32Array(mvp));
   gl.uniform3f(loc2.eye,e[0],e[1],e[2]); gl.uniform3f(loc2.fwd,fw[0],fw[1],fw[2]);
-  gl.uniform1f(loc2.ortho,orthoOn?1:0); gl.uniform1f(loc2.clip,clipZ);
+  gl.uniform1f(loc2.ortho,orthoOn?1:0);
+  if(clipOn) gl.uniform4f(loc2.clip,CN[0],CN[1],CN[2],CD); else gl.uniform4f(loc2.clip,0,0,0,1);
   const bind=(bp,bc)=>{
     gl.bindBuffer(gl.ARRAY_BUFFER,bp); gl.enableVertexAttribArray(loc2.pos);
     gl.vertexAttribPointer(loc2.pos,3,gl.FLOAT,false,0,0);
@@ -1452,12 +1537,23 @@ function oNum(x,y,s,ang,c){
 /* 一个垫了黑边的字（取尺寸时三根轴的名字） */
 function oChar(x,y,s,c){ox.font=DFONT;ox.textAlign='center';ox.textBaseline='middle';ox.lineJoin='round';
   ox.lineWidth=3.2;ox.strokeStyle='rgba(0,0,0,.75)';ox.strokeText(s,x,y);ox.fillStyle=c;ox.fillText(s,x,y)}
-function oBadge(x,y,i,an){const on=i===sel, r=on?12:10;
-  ox.beginPath();ox.arc(x,y,r,0,6.2832);ox.fillStyle=an.color;ox.fill();
-  ox.lineWidth=on?2.5:1.5;ox.strokeStyle=on?'#fff':halo(an.color);ox.stroke();
-  ox.fillStyle=ink(an.color);ox.font='700 '+(on?12:11)+'px system-ui,sans-serif';
-  ox.textAlign='center';ox.textBaseline='middle';ox.fillText(String(numOf(i)),x,y+.5);
-  hits.push({x,y,r,i})}
+/* 标题：一两个字（A、12、甲）是个圆，圆心在 (x,y)；字多了被撑成椭圆（左边那个半圆的圆心还在 (x,y)），
+   太长的截掉、末尾打省略号。c 颜色。返回它的右边到哪 */
+const BADGEW=168;
+function oBadge(x,y,i,an,c){const on=i===sel, r=on?12:10;
+  ox.font='700 '+(on?12:11)+'px system-ui,sans-serif';
+  let t=an.title, tw=ox.measureText(t).width;
+  if(tw>BADGEW){while(t.length>1&&ox.measureText(t+'…').width>BADGEW)t=t.slice(0,-1);t+='…';tw=ox.measureText(t).width}
+  const w=tw<=2*r-6?2*r:tw+14, x0=x-r;
+  ox.setLineDash([]);ox.beginPath();
+  if(w<=2*r) ox.arc(x,y,r,0,6.2832);
+  else{ox.moveTo(x0+r,y-r);ox.arcTo(x0+w,y-r,x0+w,y+r,r);ox.arcTo(x0+w,y+r,x0,y+r,r);
+    ox.arcTo(x0,y+r,x0,y-r,r);ox.arcTo(x0,y-r,x0+w,y-r,r);ox.closePath()}
+  ox.fillStyle=c;ox.fill();
+  ox.lineWidth=on?2.5:1.5;ox.strokeStyle=on?'#fff':halo(c);ox.stroke();
+  ox.fillStyle=ink(c);ox.textAlign='center';ox.textBaseline='middle';ox.fillText(t,x0+w/2,y+.5);
+  hits.push(w<=2*r?{x,y,r,i,badge:1}:{x:x0,y:y-r,w,h:2*r,i,badge:1});
+  return x0+w}
 /* 左端在 (x,y) 的一条文字胶囊（rt：x 是右端）；给了 i 就能点 */
 function oText(x,y,s,i,rt){
   ox.font=DFONT;const w=ox.measureText(s).width+14, h=22, r=11, t=y-11;if(rt)x-=w;
@@ -1494,12 +1590,30 @@ function oGear(s,c,on,R){
 }
 /* 在屏幕点 s 画第 i 条的齿轮（X 是它在模型上的位置，大小照那里算），画出来了才点得着 */
 function gearAt(s,X,i,an){const on=i===sel, R=gearR(X,on);
-  if(oGear(s,an.color,on,R)) hits.push({x:s[0],y:s[1],r:Math.max(R+2,6),i,gear:1});
+  if(oGear(s,effColor(an),on,R)) hits.push({x:s[0],y:s[1],r:Math.max(R+2,6),i,gear:1});
   return R}
-/* 尺寸的齿轮：挂在尺寸线起头那一端的外面一点（X：那一端在模型上的位置） */
+/* 尺寸的齿轮：挂在尺寸线起头那一端的外面一点（X：那一端在模型上的位置）；标题、说明从齿轮那儿引出去 */
 function dimGear(A0,B0,i,an,X){
-  const dx=B0[0]-A0[0], dy=B0[1]-A0[1], L=Math.hypot(dx,dy)||1, R=gearR(X,i===sel);
-  gearAt([A0[0]-dx/L*R*2,A0[1]-dy/L*R*2],X,i,an);
+  const dx=B0[0]-A0[0], dy=B0[1]-A0[1], L=Math.hypot(dx,dy)||1, R=gearR(X,i===sel),
+        gp=[A0[0]-dx/L*R*2,A0[1]-dy/L*R*2];
+  oTag(gp,i,an,Math.max(R,4)+9);
+  gearAt(gp,X,i,an);
+}
+/* 标题和说明：从屏幕点 s 往右上引出一排（gap：引出多远）——
+   · 标题：改过名的才画（oBadge）；
+   · 说明（写了字或者挂了文件才有）：收着是一个 i 小圆钮，点它展开；展开是一个框，框的右上角压着一个小 ×，
+     点它收起。用户（2026-11-15）：「Information 点开之后，我希望这个叉叉按键在标注说明的右上角，稍微小一点」。
+   两样都没有就什么都不画，返回 false */
+function oTag(s,i,an,gap){
+  const tt=!untitled(an), inf=hasInfo(an); if(!tt&&!inf) return false;
+  const c=effColor(an), bx=s[0]+gap, by=s[1]-gap, op=inf&&infoOpen(an);
+  ox.setLineDash([]);oLine2(s,[bx,by],c,1.6);
+  let x=bx-3;                                       // 这一排排到哪了（右边）
+  if(tt) x=oBadge(bx,by,i,an,c);
+  if(inf&&!op){const ix=tt?x+11:bx; oInfo(ix,by,false); hits.push({x:ix,y:by,r:9,i,info:1})}
+  if(op){const q=oInfoBox(x+(tt?5:3),by-13.5,an,i), cx=q.x+q.w-1, cy=q.y+1;
+    oClose(cx,cy); hits.push({x:cx,y:cy,r:7.5,i,info:1})}
+  return true;
 }
 /* 用户：「关于那些标记，就是 12345，我希望它旁边能多一个像 Information 的那个 i，给人一种点开能够查看信息
    的感觉。点开之后那个 i 就会变成一个叉，你就可以把它擦掉，擦掉就是隐藏，然后再点那个 i，它又可以打开。
@@ -1509,37 +1623,43 @@ function dimGear(A0,B0,i,an,X){
 const infoOff=new Set();
 function infoOpen(an){return !infoOff.has(an.id)}
 function infoToggle(an){if(infoOff.has(an.id))infoOff.delete(an.id);else infoOff.add(an.id);infoBtn();draw(false)}
-/* 总开关：有开着的就全收起，全收着就全打开 */
-function infoAll(){const N=A.filter(isNote);
+/* 总开关：有开着的就全收起，全收着就全打开。只管带说明的那些 */
+function infoAll(){const N=A.filter(hasInfo);
   if(N.some(infoOpen)) N.forEach(a=>infoOff.add(a.id)); else infoOff.clear();
   infoBtn();draw(false)}
-/* 总开关的样子：有开着的 = 亮着（点它全收），全收着 = 灭的（点它全开）。一条标注都没有就不显示 */
+/* 总开关的样子：有开着的 = 亮着（点它全收），全收着 = 灭的（点它全开）。一条带说明的都没有就不显示 */
 function infoBtn(){
-  const b=document.getElementById('togI'), N=A.filter(isNote), any=N.some(infoOpen), t=any?'收起全部信息':'展开全部信息';
+  const b=document.getElementById('togI'), N=A.filter(hasInfo), any=N.some(infoOpen), t=any?'收起全部说明':'展开全部说明';
   b.hidden=!N.length;b.classList.toggle('on',any);b.setAttribute('aria-pressed',any?'true':'false');
   b.title=t;b.setAttribute('aria-label',t);document.getElementById('togIt').textContent=t;
 }
-/* 编号旁边的小圆钮：i = 信息收着，点它打开；× = 信息开着，点它收起 */
-function oInfo(x,y,open){
+/* 标题旁边的小圆钮 i：说明收着，点它打开 */
+function oInfo(x,y){
   ox.setLineDash([]);
   ox.beginPath();ox.arc(x,y,8.5,0,6.2832);ox.fillStyle='rgba(20,17,11,.9)';ox.fill();
   ox.lineWidth=1.3;ox.strokeStyle='#ece7dc';ox.stroke();
   ox.lineCap='round';ox.strokeStyle='#ece7dc';
-  if(open){ox.beginPath();ox.moveTo(x-3.2,y-3.2);ox.lineTo(x+3.2,y+3.2);ox.moveTo(x+3.2,y-3.2);ox.lineTo(x-3.2,y+3.2);
-    ox.lineWidth=1.7;ox.stroke()}
-  else{ox.beginPath();ox.arc(x,y-4,1.25,0,6.2832);ox.fillStyle='#ece7dc';ox.fill();
-    ox.beginPath();ox.moveTo(x,y-1.2);ox.lineTo(x,y+4.4);ox.lineWidth=2;ox.stroke()}
+  ox.beginPath();ox.arc(x,y-4,1.25,0,6.2832);ox.fillStyle='#ece7dc';ox.fill();
+  ox.beginPath();ox.moveTo(x,y-1.2);ox.lineTo(x,y+4.4);ox.lineWidth=2;ox.stroke();
 }
-/* 一条标注的信息排成几行，每行是几段（t 字；带 u 的是网址，带 m 的是文件 —— 这两样能点）。
-   文字标注：它的字，照宽度折行，网址单独成段；文件标注：一个文件一行。最多 IL 行，多了末尾打省略号。
+/* 说明框右上角的小 ×：点它收起。比 i 小一圈 */
+function oClose(x,y){
+  ox.setLineDash([]);
+  ox.beginPath();ox.arc(x,y,6.5,0,6.2832);ox.fillStyle='rgba(20,17,11,.96)';ox.fill();
+  ox.lineWidth=1.1;ox.strokeStyle='#ece7dc';ox.stroke();
+  ox.lineCap='round';ox.beginPath();ox.moveTo(x-2.4,y-2.4);ox.lineTo(x+2.4,y+2.4);ox.moveTo(x+2.4,y-2.4);ox.lineTo(x-2.4,y+2.4);
+  ox.lineWidth=1.4;ox.stroke();
+}
+/* 一条的说明排成几行，每行是几段（t 字；带 u 的是网址，带 m 的是文件 —— 这两样能点）。
+   先是说明的字，照宽度折行，网址单独成段；再是文件，一个一行。最多 IL 行，多了末尾打省略号。
    排好的存着（每画一帧都要用），字 / 文件没变就不重排 */
 const INFO=new Map(), IW=236, IL=8;
 function infoLines(an){
-  const key=an.type==='note'?'t'+an.text:'f'+an.media.map(m=>m.n||'').join('|'), c=INFO.get(an.id);
+  const key='t'+an.text+'\u0001f'+an.media.map(m=>m.n||'').join('|'), c=INFO.get(an.id);
   if(c&&c.key===key) return c;
   ox.font=DFONT;
   const cw=s=>ox.measureText(s).width, lines=[]; let more=false;
-  if(an.type==='note'){
+  if(an.text.trim()){
     const paras=an.text.replace(/\s+$/,'').split('\n');
     paras.forEach((para,pk)=>{ if(more) return; if(lines.length>=IL){more=true;return}
       let line=[], lw=0;
@@ -1549,20 +1669,21 @@ function infoLines(an){
         if(last&&last.u===p.u) last.t+=ch; else line.push({t:ch,u:p.u});
         lw+=x}
       if(!more) lines.push(line)});
-    if(!an.text.trim()) lines.splice(0,lines.length,[{t:'（还没写字）'}]);
-  }else{
-    an.media.slice(0,IL).forEach(m=>{let s=m.n||'未命名'; while(s.length>4&&cw(s)>IW) s=s.slice(0,-2)+'…'; lines.push([{t:s,m}])});
-    if(an.media.length>IL) lines[IL-1]=[{t:'…… 还有 '+(an.media.length-IL+1)+' 个'}];
-    if(!an.media.length) lines.push([{t:'（还没有文件）'}]);
   }
   if(more){const ln=lines[lines.length-1], sg=ln[ln.length-1]; if(sg) sg.t+='…'; else ln.push({t:'…'})}
+  /* 文件：字写满了也至少留一行给它 */
+  const nf=an.media.length, room=Math.max(nf?1:0,IL-lines.length);
+  if(nf&&lines.length+1>IL) lines.length=IL-1;
+  an.media.slice(0,room).forEach(m=>{let s=m.n||'未命名'; while(s.length>4&&cw(s)>IW) s=s.slice(0,-2)+'…'; lines.push([{t:s,m}])});
+  if(nf>room) lines[lines.length-1]=[{t:'…… 还有 '+(nf-room+1)+' 个文件'}];
+  if(!lines.length) lines.push([{t:''}]);
   const w=Math.max.apply(null,lines.map(ln=>ln.reduce((a,sg)=>a+cw(sg.t),0)).concat([10]));
   const r={key,lines,w};INFO.set(an.id,r);return r;
 }
-/* 画一条标注的信息框（左上角在 x,y）：深底、圆角。网址和文件名用强调色、加下划线，点了就打开；
-   点框里别的地方 = 选中这条标注 */
+/* 画一条的说明框（左上角在 x,y）：深底、圆角。网址和文件名用强调色、加下划线，点了就打开；
+   点框里别的地方 = 选中这一条。返回框占的地方 */
 function oInfoBox(x,y,an,i){
-  const L=infoLines(an), LH=17, PX=8, PY=5, n=L.lines.length, w=L.w+PX*2, h=n*LH+PY*2, r=Math.min(9,h/2);
+  const L=infoLines(an), LH=17, PX=8, PY=5, n=L.lines.length, w=L.w+PX*2+4, h=n*LH+PY*2, r=Math.min(9,h/2);
   ox.setLineDash([]);
   ox.beginPath();ox.moveTo(x+r,y);ox.arcTo(x+w,y,x+w,y+h,r);ox.arcTo(x+w,y+h,x,y+h,r);
   ox.arcTo(x,y+h,x,y,r);ox.arcTo(x,y,x+w,y,r);ox.closePath();
@@ -1575,6 +1696,7 @@ function oInfoBox(x,y,an,i){
       if(act){ox.beginPath();ox.moveTo(tx,ty+7.5);ox.lineTo(tx+sw,ty+7.5);ox.lineWidth=1;ox.strokeStyle='#e6b455';ox.stroke();
         hits.push(sg.u?{x:tx,y:ty-LH/2,w:sw,h:LH,i,url:sg.u}:{x:tx,y:ty-LH/2,w:sw,h:LH,i,med:sg.m})}
       tx+=sw})});
+  return {x,y,w,h};
 }
 /* 画一条尺寸。i<0 是放置过程中的预览：不画序号、不能点。
    照工程图的画法：尺寸线离开测点一段、引出线连过去；相对读数顺着尺寸线，写在尺寸线和
@@ -1633,7 +1755,7 @@ function oArrowP(s,a,b,c,w){const bx=s[0]-a[0]*13, by=s[1]-a[1]*13;
 function drawDimP(an,i,g){
   const T=g.P.map(w2s), SM=g.M.map(w2s), S=g.N.map(w2s);
   if(T.some(s=>s[2]<=0)||SM.some(s=>s[2]<=0)||S.some(s=>s[2]<=0)) return;
-  const on=i>=0&&i===sel, c=an.color, n=T.length, o=g.ord, A0=S[o[0]], B0=S[o[n-1]];
+  const on=i>=0&&i===sel, c=effColor(an), n=T.length, o=g.ord, A0=S[o[0]], B0=S[o[n-1]];
   const Lp=Math.hypot(B0[0]-A0[0],B0[1]-A0[1]);
   if(Lp<1){oDot(A0,c,3.5);if(i>=0)dimGear(A0,[A0[0]+1,A0[1]],i,an,g.N[o[0]]);return}     // 正对着尺寸线看：只剩一个点
   /* 面里的两个方向：u 量的方向；wo 拉出去的那一侧（没拉出也有朝向，读数写在那一侧） */
@@ -1671,14 +1793,14 @@ function drawDimP(an,i,g){
 }
 /* 画一条尺寸：手动放过的画在面里；前几版留下来没放过的，照老办法冲着屏幕自动摆 */
 function drawDim(an,i){
-  const g=dimGeo(an,true); if(!g||g.P.every(q=>q[2]>clipZ)) return;
+  const g=dimGeo(an,true); if(!g||g.P.every(cutW)) return;         // 测点全被剖掉了：不画
   if(an.ov&&Math.hypot(g.w[0],g.w[1],g.w[2])>.5) drawDimP(an,i,g); else drawDimS(an,i);
 }
 /* 老办法（没放过的老数据）：冲着屏幕画，尺寸线自动摆到背着模型的一侧 */
 function drawDimS(an,i){
-  const g=dimGeo(an,true); if(!g||g.P.every(q=>q[2]>clipZ)) return;
+  const g=dimGeo(an,true); if(!g||g.P.every(cutW)) return;
   const T=g.P.map(w2s), SM=g.M.map(w2s); if(T.some(s=>s[2]<=0)||SM.some(s=>s[2]<=0)) return;
-  const on=i>=0&&i===sel, c=an.color, n=T.length, o=g.ord, a3=SM[o[0]], b3=SM[o[n-1]];
+  const on=i>=0&&i===sel, c=effColor(an), n=T.length, o=g.ord, a3=SM[o[0]], b3=SM[o[n-1]];
   let ux=b3[0]-a3[0], uy=b3[1]-a3[1]; const L=Math.hypot(ux,uy);
   if(L<1){oDot(a3,c,3.5);if(i>=0)dimGear(a3,[a3[0]+1,a3[1]],i,an,g.M[o[0]]);return}     // 正对着尺寸线看：只剩一个点
   ux/=L;uy/=L;
@@ -1752,6 +1874,14 @@ function oMark(h,kind){
 function prevAn(pts,ov,off){return {type:'dim',chain:tool.chain,pts,dir:tool.dir,show:tool.show,ov,off,color:tool.color}}
 function drawTool(){
   const r=hover&&hover.res;
+  if(tool.type==='view'){
+    /* 三点定义视角：原点一个白点；X 轴红的、Y 轴绿的，从原点画到点下去的那一点（还没点的那根跟着鼠标） */
+    const P=tool.pts.map(q=>w2s(L2W(PIDX.get(q.pn),q.p))), h=hover&&hover.w?w2s(hover.w):null;
+    if(P[0]&&P[0][2]>0){
+      [1,2].forEach(k=>{const e=P[k]||(tool.pts.length===k?h:null); if(!e||e[2]<=0) return;
+        oLine2(P[0],e,AXC[k-1],2.2,'rgba(0,0,0,.6)');oChar(e[0]+12,e[1]-12,AXL[k-1],AXC[k-1])});
+      oDot(P[0],'#ffffff',4.5,'rgba(0,0,0,.7)')}
+  }
   if(tool.type==='notch'&&tool.cut){
     /* 开槽定了起点：鼠标指到哪，槽就画到哪（线框），旁边写着现在的长度 */
     const c=tool.cut, s1=w2s(L2W(c.p.pi,c.p1)), h=hover&&hover.cut;
@@ -1799,7 +1929,7 @@ function drawTool(){
     if(h[2]>0){
       if(r&&r.free) oDot(h,'#ffffff',3,'rgba(0,0,0,.7)');          // 没点中木料：方向线上的一个点
       else{oMark(h,hover.kind);
-        if(tool.type==='dim'||tool.type==='note'||tool.type==='doc'||tool.type==='notch'||hover.tr||hover.g0){const t=SNAPN[hover.kind]||'';
+        if(tool.type==='dim'||tool.type==='note'||tool.type==='view'||tool.type==='notch'||hover.tr||hover.g0){const t=SNAPN[hover.kind]||'';
           ox.font='600 11px system-ui,sans-serif';ox.textAlign='left';ox.textBaseline='middle';ox.lineJoin='round';
           ox.lineWidth=3;ox.strokeStyle='rgba(0,0,0,.75)';ox.strokeText(t,h[0]+11,h[1]+14);
           ox.fillStyle='#fff';ox.fillText(t,h[0]+11,h[1]+14)}}}}
@@ -1812,28 +1942,27 @@ function drawOv(){
   A.forEach((an,i)=>{
     if(!annVisible(an)) return;
     if(tool&&tool.edit===an.id) return;          // 正在给这条接着加点：画的是下面那条预览
-    const on=i===sel; ox.globalAlpha=an.done&&!on?.5:1;
+    /* 已处理的：浅灰（effColor），整个再淡下去；正选着它的时候不淡，看得清 */
+    const on=i===sel, c=effColor(an); ox.globalAlpha=an.done&&!on?.55:1;
     if(an.type==='dim'){drawDim(an,i);return}
-    const pi=PIDX.get(an.pn), wp=L2W(pi,an.pt); if(wp[2]>clipZ) return;
+    const pi=PIDX.get(an.pn), wp=L2W(pi,an.pt); if(cutW(wp)) return;
     const s=w2s(wp); if(s[2]<=0) return;
     if(isNote(an)){
-      /* 标注（文字 / 文件）：准确位置一个小点，编号往右上引出，不挡住要看的地方。编号右边一个小圆钮：
-         × = 信息开着（文字标注的字 / 文件标注的文件名写在它右边的框里），点它收起；收起以后是 i，点它再打开 */
-      const bx=s[0]+14, by=s[1]-14, r=on?12:10, ix=bx+r+11, op=infoOpen(an);
-      oLine2(s,[bx,by],an.color,1.6);oDot(s,an.color);
-      if(op) oInfoBox(ix+13,by-13.5,an,i);
-      oBadge(bx,by,i,an);
-      oInfo(ix,by,op);hits.push({x:ix,y:by,r:9,i,info:1});
+      /* 标注：准确位置一个小点（能点 —— 没起标题、没写说明的标注就只有它）；标题、说明往右上引出，
+         不挡住要看的地方（见 oTag） */
+      hits.push({x:s[0],y:s[1],r:6,i});
+      oTag(s,i,an,14);oDot(s,c,on?4.5:3.5,on?'#fff':null);
       return}
-    /* 高亮、槽口、开洞：不编号、不写说明。把手是一个小齿轮（看着就是「设置」），点它弹出小界面（选中的大一圈、
-       描白边）；槽口、开洞的那一块本身也能点。槽口的齿轮放在槽的一条边上（槽中间要写字）；开洞的往右上
-       挪开一点，不盖住洞。齿轮有实际大小，跟着缩放（见 gearR），远了不画 */
+    /* 高亮、槽口、开洞：把手是一个小齿轮（看着就是「设置」），点它弹出小界面（选中的大一圈、描白边）；
+       槽口、开洞的那一块本身也能点。槽口的齿轮放在槽的一条边上（槽中间要写字）；开洞的往右上挪开一点，
+       不盖住洞。齿轮有实际大小，跟着缩放（见 gearR），远了不画。标题、说明从齿轮那儿再往右上引出 */
     const nt=an.type==='notch'; let s0=s;
     if(nt){const q=an.pt.slice(); q[an.g.wa]=an.box[an.g.wa+3]; const e=w2s(L2W(pi,q)); if(e[2]>0) s0=e}
     if(an.box){const b=an.box, q=[0,1,2,3,4,5,6,7].map(k=>w2s(L2W(pi,[b[k&1?3:0],b[k&2?4:1],b[k&4?5:2]])));
       if(q.every(z=>z[2]>0)) hits.push({poly:hull2(q),i})}
     const gR=gearR(wp,on), gk=gR*1.55, gp=an.type==='hole'?[s[0]+gk,s[1]-gk]:s0;
-    if(an.type==='hole'&&gR>=GEARMIN) oLine2(s,gp,an.color,Math.min(1.2,gR/7));
+    if(an.type==='hole'&&gR>=GEARMIN) oLine2(s,gp,c,Math.min(1.2,gR/7));
+    oTag(gp,i,an,Math.max(gR,4)+9);
     gearAt(gp,wp,i,an);
     /* 槽口：长度和深度直接写在槽上，贴着开槽的那个面、顺着槽的长向（宽度不写）。字的大小跟着槽走：
        整块正好落在槽口里（宽占六成、长不超过九成），槽远了字小、近了字大，比例不变 */
@@ -1841,7 +1970,7 @@ function drawOv(){
       ox.font=NFONT;
       const unit=Math.min(.6*(b[g.wa+3]-b[g.wa])/20,.9*(b[g.ax+3]-b[g.ax])/(ox.measureText(t).width+8)),
             p=planeAt(wp,dirW(pi,AX[g.ax]),dirW(pi,AX[g.wa]),unit,false);
-      oNumP(p.s,p.e1,p.e2,t,an.color)}
+      oNumP(p.s,p.e1,p.e2,t,c)}
     /* 开洞：直径（圆洞）或者长、宽（方洞）写在洞口旁边 —— 贴着点中的那个面、顺着木料的长向，紧挨着洞。
        洞小，字不能跟着洞缩（Ø25 的洞里写不下看得清的字）：和尺寸读数一样有实际大小，近大远小、拉近到
        正常字号为止；面窄就跟着面收（字块的高不超过面宽的六成）。平常放在洞的小头那一侧（序号在
@@ -1854,7 +1983,7 @@ function drawOv(){
             sg=pb&&an.pt[g.ax]-far<pb.lo[g.ax]&&an.pt[g.ax]+far<=pb.hi[g.ax]?1:-1,
             q=an.pt.slice(); q[g.ax]+=sg*(far-tl/2);
       const p=planeAt(L2W(pi,q),u,w,unit,true);
-      if(p.s[2]>0) oNumP(p.s,p.e1,p.e2,t,an.color)}
+      if(p.s[2]>0) oNumP(p.s,p.e1,p.e2,t,c)}
   });
   ox.globalAlpha=1;
   if(tool) drawTool();
@@ -1884,18 +2013,22 @@ function hitBadge(cx,cy,touch){const h=hitAt(cx,cy,touch);return h?h.i:-1}
 /* 每条标注记着做它时的画面：镜头、投影、爆炸、剖切、隐藏了哪些楼层和构件类型。
    楼层和类型记名字不记序号，镜头目标记绝对坐标 —— 重新生成模型后照样用。 */
 function getView(){
-  return {yaw:Math.round(yaw*1e4)/1e4,pitch:Math.round(pitch*1e4)/1e4,dist:Math.round(dist),
-    t:[0,1,2].map(k=>Math.round(center[k]+pan[k])),o:orthoOn?1:0,exp:+expEl.value,clip:+clipEl.value,
+  const v=vwGet(vwOn);
+  return {yaw:Math.round(yaw*1e4)/1e4,pitch:Math.round(pitch*1e4)/1e4,roll:Math.round(roll*1e4)/1e4,dist:Math.round(dist),
+    t:[0,1,2].map(k=>Math.round(center[k]+pan[k])),o:orthoOn?1:0,exp:+expEl.value,
+    cv:vwOn,cd:v?v.clip:topClip,                   // 那时用着哪个视角、它的剖切深度
     a:Math.round(cv.clientWidth/Math.max(1,cv.clientHeight)*1000)/1000,
     hl:D.levels.filter((_,i)=>!showLv.has(i)),hk:D.kinds.filter((_,i)=>!showKd.has(i))};
 }
 let flyRAF=0;
 function stopFly(){if(flyRAF){cancelAnimationFrame(flyRAF);flyRAF=0}}
-function flyTo(y2,p2,d2,t2){
+/* 镜头转到：朝向 y2 / p2（滚转 r2，不给就不动它）、距离 d2、盯着 t2 那一点 */
+function flyTo(y2,p2,d2,t2,r2){
   stopFly();
-  const y1=yaw,p1=pitch,d1=dist,t1=pan.slice(),tp=[t2[0]-center[0],t2[1]-center[1],t2[2]-center[2]];
+  const y1=yaw,p1=pitch,q1=roll,d1=dist,t1=pan.slice(),tp=[t2[0]-center[0],t2[1]-center[1],t2[2]-center[2]];
   let dy=y2-y1; dy=Math.atan2(Math.sin(dy),Math.cos(dy));        // 转角走近路
-  const at=s=>{yaw=y1+dy*s;pitch=p1+(p2-p1)*s;dist=d1*Math.pow(d2/d1,s);
+  let dr=(r2==null?q1:r2)-q1; dr=Math.atan2(Math.sin(dr),Math.cos(dr));
+  const at=s=>{yaw=y1+dy*s;pitch=p1+(p2-p1)*s;roll=s>=1&&r2!=null?r2:q1+dr*s;dist=d1*Math.pow(d2/d1,s);
     pan=[0,1,2].map(i=>t1[i]+(tp[i]-t1[i])*s);draw(false)};
   if(document.hidden||matchMedia('(prefers-reduced-motion: reduce)').matches){at(1);return}
   const t0=performance.now();
@@ -1916,7 +2049,9 @@ function frame(v,an){
   const w=an&&anchorW(an);
   if(w){
     const z=[Math.cos(v.pitch)*Math.cos(v.yaw),Math.cos(v.pitch)*Math.sin(v.yaw),Math.sin(v.pitch)],
-          x=V.norm(V.cross([0,0,1],z)), y=V.cross(z,x), r=V.sub(w,t), k=(H/2)/(d*Math.tan(0.36)), s=safeRect();
+          x0=V.norm(V.cross([0,0,1],z)), y0=V.cross(z,x0), cr=Math.cos(v.roll||0), sr=Math.sin(v.roll||0),
+          x=[0,1,2].map(i=>x0[i]*cr+y0[i]*sr), y=[0,1,2].map(i=>y0[i]*cr-x0[i]*sr),
+          r=V.sub(w,t), k=(H/2)/(d*Math.tan(0.36)), s=safeRect();
     const px=W/2+V.dot(r,x)*k, py=H/2-V.dot(r,y)*k;
     /* 露不出来才挪；挪就挪到往里收一圈的位置，别正好贴在面板边上 */
     if(px<s.x0||px>s.x1||py<s.y0||py>s.y1){
@@ -1932,13 +2067,137 @@ function applyView(v,an){
   showKd.clear();D.kinds.forEach((n,i)=>{if(!v.hk.includes(n))showKd.add(i)});
   syncFilters();
   if(+expEl.value!==v.exp){expEl.value=v.exp;expEl.oninput({target:expEl})}
-  if(+clipEl.value!==v.clip){clipEl.value=v.clip;clipEl.oninput({target:clipEl})}
+  /* 剖切：那时用着的视角还在就换回它、剖切深度照那时的；视角删掉了就不剖切。老数据记的是按高度的百分比 */
+  if(typeof v.cv==='string'){const w=vwGet(v.cv);
+    if(v.cv==='top'){vwOn='top';topClip=v.cd}
+    else if(w){vwOn=w.id;w.clip=v.cd}
+    else{vwOn='top';topClip=null}}
+  else{vwOn='top';topClip=v.clip<100?Math.round(bb[2]+(bb[5]-bb[2])*v.clip/100):null}
+  vwClip();renderViews();
   if(!!v.o!==orthoOn) document.getElementById('bProj').click();
   rebuild();
   const f=frame(v,an);
-  flyTo(v.yaw,v.pitch,f.d,f.t);
+  flyTo(v.yaw,v.pitch,f.d,f.t,v.roll||0);
 }
 function focusOn(an){const w=anchorW(an);if(w)flyTo(yaw,pitch,Math.min(dist,radius*.9),w)}
+
+/* ---------- 视角：俯视，和三点定出来的 ---------- */
+/* 用户（2026-11-15）：「我需要加上手动设置视角的功能，三点定义视角：先点击一个原点，再点击选择 X 轴，然后选择
+   Y 轴，通过这个确定一个平面来定义视角。面向平面方向，屏幕向外为 Z 的正方向，屏幕向内为 Z 的负方向。可以创建
+   多个视角，每个视角可以自己命名、重命名。默认视角命名就是视角一、视角二这样依次排。把剖切深度和每一个视角
+   放到一起，一个视角对应一个剖切深度。拉动滑块，往 Z 轴的负方向走，也就是往屏幕内走。」
+   VW 里一条 = {id,name,o,x,y,clip}：o 原点、x / y 两根轴（单位向量，互相垂直；都是没爆炸的世界坐标），
+   Z = x × y，朝着看的人。clip：剖切深度（毫米）—— 剖切面离原点那个面多远，往屏幕里为正、往外为负；
+   null = 不剖切。俯视是自带的（'top'）：原点是模型的零点、X 朝右、Y 朝上，它的剖切记的是标高 topClip。
+   同一时间只用一个视角（vwOn）：剖切面是它的，滑块跟在它的名字下面。镜头转开了它也还是「用着的」——
+   切完了转着看，和早先的「剖切高度」一样。换视角只转方向，不动远近、不挪位置。 */
+const VR=new Map();                   // 每个视角：模型顺着它的 Z 轴从哪到哪（不带爆炸；算一次存着）
+function vwGet(id){return id==='top'?null:(VW.find(v=>v.id===id)||null)}
+function vwAxes(v){return v?{o:v.o,x:v.x,y:v.y,z:V.cross(v.x,v.y)}:{o:[0,0,0],x:[1,0,0],y:[0,1,0],z:[0,0,1]}}
+function normView(o){
+  if(!o||typeof o!=='object'||!o.id||!v3(o.o)||!v3(o.x)||!v3(o.y)) return null;
+  const x=V.norm(o.x), d=V.dot(o.y,x), y0=[0,1,2].map(i=>o.y[i]-x[i]*d);
+  if(Math.hypot(o.x[0],o.x[1],o.x[2])<1e-6||Math.hypot(y0[0],y0[1],y0[2])<1e-6) return null;
+  const r5=a=>a.map(q=>Math.round(q*1e6)/1e6||0);
+  return {id:String(o.id),name:String(o.name||'').replace(/\s+/g,' ').trim().slice(0,40)||'视角',
+    o:r3(o.o),x:r5(x),y:r5(V.norm(y0)),clip:num(o.clip)?Math.round(o.clip):null}}
+/* 三个点（没爆炸的世界坐标）定一个视角；定不出来（两点重合、三点共线）返回 null */
+function viewFrom(O,PX,PY){
+  const a=V.sub(PX,O), b=V.sub(PY,O), la=Math.hypot(a[0],a[1],a[2]), lb=Math.hypot(b[0],b[1],b[2]);
+  if(la<1||lb<1) return null;
+  const c=V.cross(a,b); if(Math.hypot(c[0],c[1],c[2])/(la*lb)<.02) return null;
+  return normView({id:nid(),name:freeName('视角',VW.map(v=>v.name)),o:O,x:a,y:b})}
+/* 面朝这个视角看过去，镜头要转成什么样：yaw / pitch 定 Z 朝哪，roll 让 X 朝右。Z 正好竖直时（看地面、
+   看天花）yaw 定不出来，直接照 X 取 */
+function vwAngles(a){
+  const z=a.z, p=Math.max(-1.5706,Math.min(1.5706,Math.asin(Math.max(-1,Math.min(1,z[2]))))),
+        y=Math.hypot(z[0],z[1])<1e-4?Math.atan2(-a.x[0],a.x[1]):Math.atan2(z[1],z[0]),
+        x0=[-Math.sin(y),Math.cos(y),0], y0=[-Math.sin(p)*Math.cos(y),-Math.sin(p)*Math.sin(y),Math.cos(p)];
+  return {yaw:y,pitch:p,roll:Math.atan2(V.dot(a.x,y0),V.dot(a.x,x0))}}
+/* 模型顺着这个视角的 Z 轴占到哪（爆炸开了跟着放宽） */
+function vwRange(id){
+  let r=VR.get(id); const z=vwAxes(vwGet(id)).z;
+  if(!r){let lo=1e18, hi=-1e18;
+    for(let i=0;i<GP.length;i+=3){const s=GP[i]*z[0]+GP[i+1]*z[1]+GP[i+2]*z[2]; if(s<lo)lo=s; if(s>hi)hi=s}
+    r={lo,hi};VR.set(id,r)}
+  const k=expK*Math.hypot(z[0],z[1]);return {lo:Math.floor(r.lo-k)-1,hi:Math.ceil(r.hi+k)+1}}
+/* 现在用着的视角的剖切面顺着它的 Z 轴在哪（null = 不剖切）；zc → 这个视角记的那个数 */
+function vwZc(id){const v=vwGet(id);
+  if(!v) return topClip;
+  return v.clip==null?null:V.dot(v.o,vwAxes(v).z)-v.clip}
+function vwSetZc(id,zc){const v=vwGet(id);
+  if(!v) topClip=zc==null?null:Math.round(zc);
+  else v.clip=zc==null?null:Math.round(V.dot(v.o,vwAxes(v).z)-zc)}
+/* 把用着的那个视角的剖切面交给画图的（CN / CD） */
+function vwClip(){
+  if(vwOn!=='top'&&!vwGet(vwOn)) vwOn='top';
+  const zc=vwZc(vwOn); if(zc==null) setClip(null); else setClip(vwAxes(vwGet(vwOn)).z,zc)}
+/* 剖切深度写成什么：俯视写标高；别的写离原点那个面多远、在哪一侧 */
+function vwClipText(id){const v=vwGet(id), c=v?v.clip:topClip;
+  if(c==null) return '全部';
+  if(!v) return '标高 '+c+' mm';
+  return c===0?'正在原点那个面':c>0?'原点往里 '+c+' mm':'原点往外 '+(-c)+' mm'}
+/* 用这个视角：镜头转过去面朝着它。keep：绕着它的原点转，原点在屏幕上不动（刚定出来的时候 —— 眼前这一块别跑）；
+   不然绕着画面中间盯着的那一点转。远近都不动 */
+function vwGo(id,keep){
+  if(id!=='top'&&!vwGet(id)) id='top';
+  vwOn=id;vwClip();renderViews();
+  const a=vwAxes(vwGet(id)), g=vwAngles(a);
+  let t=[center[0]+pan[0],center[1]+pan[1],center[2]+pan[2]];
+  if(keep){const sv=[yaw,pitch,roll,pan], h=grab(a.o);
+    yaw=g.yaw;pitch=g.pitch;roll=g.roll;hold(h);t=[center[0]+pan[0],center[1]+pan[1],center[2]+pan[2]];
+    yaw=sv[0];pitch=sv[1];roll=sv[2];pan=sv[3]}
+  flyTo(g.yaw,g.pitch,dist,t,g.roll);
+}
+/* 视角改了（新建、改名、删除）：进撤销；剖切深度拉来拉去不算一步，只是存下来 */
+function vwChanged(){record();dirty=true;vwClip();renderViews();autosave();state();undoBtns();draw(false)}
+let vwEdit='';                         // 正在改名的那个视角
+function renderViews(){
+  const host=document.getElementById('views');host.textContent='';
+  document.getElementById('bTop').classList.toggle('on',vwOn==='top');
+  /* 剖切深度那一块：一个滑块（最左 = 全部，往右 = 往屏幕里切）加一个能敲数的框 */
+  const clipBox=(id,cls)=>{
+    const v=vwGet(id), b=el('div','vwC'+(cls?' '+cls:'')), l=el('div','vwL'), r=el('div','vwR'),
+          lab=el('span','mini',vwClipText(id)), sl=el('input'), ni=el('input'), rg=vwRange(id), zc=vwZc(id);
+    l.appendChild(el('span',null,'剖切深度'));l.appendChild(lab);
+    sl.type='range';sl.min='0';sl.max='1000';sl.step='1';
+    sl.value=zc==null?0:Math.max(1,Math.min(1000,Math.round((rg.hi-zc)/(rg.hi-rg.lo)*1000)));
+    sl.setAttribute('aria-label','剖切深度');
+    ni.type='number';ni.step='10';ni.placeholder='全部';ni.inputMode='decimal';
+    ni.title=v?'剖切面离原点那个面多远（毫米）：往屏幕里为正，往外为负；空着 = 不剖切':'剖切到的标高（毫米）；空着 = 不剖切';
+    ni.setAttribute('aria-label',v?'剖切深度（毫米）':'剖切标高（毫米）');
+    const cur=()=>v?v.clip:topClip, show=()=>{lab.textContent=vwClipText(id);vwClip();autosave();draw(false)};
+    ni.value=cur()==null?'':cur();
+    sl.oninput=()=>{const k=+sl.value;
+      vwSetZc(id,k<=0?null:rg.hi-(rg.hi-rg.lo)*k/1000);ni.value=cur()==null?'':cur();show()};
+    ni.oninput=()=>{const t=ni.value.trim(), x=parseFloat(t);
+      if(t===''){if(v)v.clip=null;else topClip=null}
+      else if(isFinite(x)){if(v)v.clip=Math.round(x);else topClip=Math.round(x)}
+      else return;
+      const z=vwZc(id);sl.value=z==null?0:Math.max(1,Math.min(1000,Math.round((rg.hi-z)/(rg.hi-rg.lo)*1000)));show()};
+    r.appendChild(sl);r.appendChild(ni);b.appendChild(l);b.appendChild(r);return b};
+  if(vwOn==='top') host.appendChild(clipBox('top','top'));
+  VW.forEach(v=>{
+    const on=v.id===vwOn, box=el('div','vw'+(on?' on':'')), h=el('div','vwH');box.dataset.id=v.id;
+    if(vwEdit===v.id){
+      const inp=el('input');inp.type='text';inp.value=v.name;inp.maxLength=40;inp.setAttribute('aria-label','视角的名字');
+      const done=ok=>{if(vwEdit!==v.id) return;vwEdit='';const s=inp.value.replace(/\s+/g,' ').trim();
+        if(ok&&s&&s!==v.name){v.name=s;vwChanged()}else renderViews()};
+      inp.onkeydown=e=>{e.stopPropagation();if(e.key==='Enter')done(true);else if(e.key==='Escape')done(false)};
+      inp.onblur=()=>done(true);
+      h.appendChild(inp);setTimeout(()=>{try{inp.focus();inp.select()}catch(_){}},0);
+    }else{
+      const n=el('span','vwN',v.name);n.tabIndex=0;n.setAttribute('role','button');n.title='面朝这个视角看过去';
+      n.onclick=()=>vwGo(v.id);n.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();vwGo(v.id)}};
+      h.appendChild(n);
+      h.appendChild(ibtn('pen','改名',()=>{vwEdit=v.id;renderViews()}));
+      h.appendChild(ibtn('x','删除这个视角（删错了按撤销）',()=>{
+        VW.splice(VW.indexOf(v),1);VR.delete(v.id);if(vwOn===v.id)vwOn='top';vwChanged()}));
+    }
+    box.appendChild(h);
+    if(on) box.appendChild(clipBox(v.id));
+    host.appendChild(box)});
+}
 
 /* ---------- 放置 ---------- */
 /* 尺寸怎么量（照 SketchUp 尺寸工具的路数）：
@@ -1968,19 +2227,21 @@ function startTool(t,ed,place){
       neg:false,plane:-1,pj:-1,pm:null,color:COLORS[DEFCOL.dim],off:0,ov:null});
     const g=ed&&dimGeo(ed,false);
     if(g) Object.assign(tool,{edit:ed.id,pts:ed.pts.map(q=>({pn:q.pn,p:q.p.slice()})),keep:ed.pts.length,
-      dir:ed.dir||(ed.chain?dirL(PIDX.get(ed.pts[0].pn),g.u):null),show:ed.show,color:ed.color,off:ed.off,ov:ed.ov,
+      dir:ed.dir||(ed.chain?dirL(PIDX.get(ed.pts[0].pn),g.u):null),show:ed.show,color:effColor(ed),off:ed.off,ov:ed.ov,
       stage:place?'place':'pts',replace:!!place});
   }
   /* 焦点别留在刚点的按钮上：不然取点时按回车会再按一次那个按钮 */
   const ae=document.activeElement; if(ae&&ae!==document.body&&ae.blur) ae.blur();
   hover=null;showInfo(null);cv.style.cursor='crosshair';
-  toolBtns();if(NARROW.matches)closeAnn();hud();cap();renderPop();undoBtns();draw(false);
+  /* 手机上两个抽屉都收起来，把模型让出来 */
+  toolBtns();if(NARROW.matches){closeAnn();document.body.classList.remove('side-open');tog.setAttribute('aria-expanded','false')}
+  hud();cap();renderPop();undoBtns();draw(false);
 }
 function endTool(){tool=null;hover=null;cv.style.cursor='';toolBtns();hud();cap();undoBtns();draw(false)}
 /* 这根木料上标的圆洞：两个口的圆心也能吸。q 圆心，na / s 这个口开在哪根轴的哪一头
    （朝着镜头的那个口才吸） */
 function holeCtrs(p){const r=[];
-  A.forEach(an=>{if(an.type!=='hole'||an.g.sh!=='c'||PIDX.get(an.pn)!==p.pi||an.mi!==p.mi) return;
+  A.forEach(an=>{if(an.type!=='hole'||an.g.sh!=='c'||PIDX.get(an.pn)!==p.pi||an.mi!==p.mi||effHidden(an)) return;
     const b=an.box, na=an.g.na;
     [[b[na],-1],[b[na+3],1]].forEach(w=>{const q=[(b[0]+b[3])/2,(b[1]+b[4])/2,(b[2]+b[5])/2];
       q[na]=w[0];r.push({q,na,s:w[1]})})});
@@ -2480,8 +2741,21 @@ function finishPts(){
     A[i].pts=t.pts;A[i].dir=t.dir;A[i].show=t.show;sel=i;changed(true);return}
   enterPlace();
 }
+/* 三点定义视角的那一下：照量尺寸那样吸附取点；三个点齐了就定出视角、转过去 */
+function viewTap(cx,cy,touch){
+  const q=snapAt(cx,cy,touch,null), again=()=>{hover=null;hud();undoBtns();if(hovXY)hoverNow();else draw(false)};
+  if(!q){draw(false);toast('请点在木料上');return}
+  const W=tool.pts.map(t=>L2W0(PIDX.get(t.pn),t.p)), w=L2W0(q.pi,q.p), n=W.length;
+  if(n&&Math.hypot(w[0]-W[0][0],w[1]-W[0][1],w[2]-W[0][2])<1){draw(false);toast('这一点和原点重合了，换个地方点');return}
+  if(n<2){tool.pts.push({pn:q.pn,p:q.p});again();return}
+  const v=viewFrom(W[0],W[1],w);
+  if(!v){draw(false);toast('这三个点在一条直线上，定不出平面：第三个点换个地方');return}
+  endTool();VW.push(v);vwOn=v.id;vwChanged();vwGo(v.id,true);
+  toast('已建「'+v.name+'」：X 朝右、Y 朝上；它的剖切深度在左边侧栏里');
+}
 function toolTap(cx,cy,touch){
   const T=tool.type;
+  if(T==='view'){viewTap(cx,cy,touch);return}
   if(guideTool()&&(guideOn()||guided())){guideTap(cx,cy,touch);return}
   if(T==='dim'){
     if(tool.stage==='place'){const pl=placeAt(cx,cy);
@@ -2505,7 +2779,6 @@ function toolTap(cx,cy,touch){
   endTool();
   if(T==='hl') addAnn(Object.assign({type:'hl',pt:r3(h.raw)},base));
   else if(T==='note') addAnn(Object.assign({type:'note',pt:r3(h.loc)},base));
-  else if(T==='doc') addDoc(Object.assign({pt:r3(h.loc)},base));       // 位置定了，接着选文件
   else{const an=Object.assign({type:T},base);initCut(an,p,h);addAnn(an)}
 }
 function tapAt(cx,cy,touch){
@@ -2530,6 +2803,8 @@ function hoverNow(){
       if(tr&&!guideOn()&&tool.type==='notch'&&tool.cut){const r=cutAt(hovXY[0],hovXY[1],false,tr.W0); if(r) hover.cut=r}
     }else{const q=snapAt(hovXY[0],hovXY[1],false,null); hover=q?{w:L2W(q.pi,q.p),kind:q.kind,g0:true}:null}
     draw(false);return}
+  if(tool.type==='view'){const q=snapAt(hovXY[0],hovXY[1],false,null);
+    hover=q?{w:L2W(q.pi,q.p),kind:q.kind}:null;draw(false);return}
   if(tool.type==='dim'){
     if(tool.stage==='place'){placeTrack(hovXY[0],hovXY[1]);
       const pl=placeAt(hovXY[0],hovXY[1]);hover=pl?{pl,xy:hovXY.slice()}:null}
@@ -2537,7 +2812,7 @@ function hoverNow(){
   }else if(tool.type==='notch'&&tool.cut){const r=cutAt(hovXY[0],hovXY[1],false);
     hover=r?{cut:r,xy:hovXY.slice(),w:r.w,kind:r.kind}:null;
   }else{const p=pickPiece(hovXY[0],hovXY[1]);
-    if(p){const h=hitInfo(p,hovXY[0],hovXY[1],false), sn=tool.type==='note'||tool.type==='doc'||tool.type==='notch';
+    if(p){const h=hitInfo(p,hovXY[0],hovXY[1],false), sn=tool.type==='note'||tool.type==='notch';
       hover={w:L2W(p.pi,sn?h.loc:h.raw),kind:sn?h.snap:'f'}}
     else hover=null}
   draw(false);
@@ -2564,25 +2839,27 @@ function openAnn(){
 function closeAnn(){document.body.classList.remove('ann-open');tog2.setAttribute('aria-expanded','false');cap()}
 function addAnn(o){
   const nt=isNote(o);
-  const an=norm(Object.assign({id:nid(),t:Date.now()},o,(nt&&typeof o.pn==='string')?{view:getView()}:{}));
+  const an=norm(Object.assign({id:nid(),t:Date.now(),title:newTitle()},o,(nt&&typeof o.pn==='string')?{view:getView()}:{}));
   if(!an) return;
   A.push(an);
-  /* 画上去的东西做完就完了：不进清单、不选中、不弹界面；要改，在模型上点它 */
+  /* 画上去的东西（测量、高亮、槽口、开洞）做完就完了：进清单，但不选中、不弹界面 —— 接着做下一个；
+     要改，在模型上点它，或者在清单里点它 */
   if(!nt){sel=-1;changed(true);return}
   sel=A.length-1;changed(true);openAnn();
   const box=document.querySelector('#annList .an.sel');
   if(box){if(box.scrollIntoView)box.scrollIntoView({block:'nearest'});
     const ta=box.querySelector('textarea');if(ta&&!NARROW.matches)ta.focus()}
 }
-/* fly：转到那一条的画面；没有位置的文件标注，改成打开它的第一个文件
-   （quiet：一条条往下翻的时候不要自己弹出来） */
+/* fly：转到那一条的画面（标注记着视角就回到那个视角，别的把镜头挪过去）。
+   选中的那条要是在折起来的组里，把那一组展开 */
 function select(i,fly,quiet){
-  sel=i;renderList();cap();renderPop();
+  sel=i;
+  if(i>=0&&A[i]){const an=A[i], g=grpOf(an); if(an.done)doneFold=false; else if(g)g.fold=false}
+  renderList();cap();renderPop();
   if(i>=0){
     const an=A[i];
     if(fly){if(an.view)applyView(an.view,an);
-      else if(!placed(an)){if(an.media.length&&!quiet)openMedia(an.media[0])}
-      else focusOn(an)}
+      else if(placed(an)&&!effHidden(an)) focusOn(an)}
     const box=document.querySelector('#annList .an.sel');if(box&&box.scrollIntoView)box.scrollIntoView({block:'nearest'});
   }
   draw(false);
@@ -2596,9 +2873,11 @@ function step(d){const ids=A.map((a,k)=>isNote(a)?k:-1).filter(k=>k>=0); if(!ids
    哪几个 —— 一张照片几百 KB，每步都抄一份吃不消。同一处连着改（打字、连点数字框）
    1.2 秒之内并成一步。取尺寸点到一半时，撤销先退掉刚点的那个点。
    撤销栈只在这次打开页面期间有效，刷新就没了（标注本身还在草稿里）。 */
-const UN=[], RE=[]; let LAST={items:[]}, lastKey='', lastT=0;
+const UN=[], RE=[]; let LAST={items:[],groups:[],views:[],dh:false,df:false}, lastKey='', lastT=0;
 function cloneAn(an){const c=JSON.parse(JSON.stringify(Object.assign({},an,{media:0})));c.media=an.media.slice();return c}
-function snapA(){return {items:A.map(cloneAn)}}
+const cloneJ=x=>JSON.parse(JSON.stringify(x));
+/* 一步里记着的：标注、群组、视角、已处理那一组藏没藏 / 折没折 */
+function snapA(){return {items:A.map(cloneAn),groups:cloneJ(G),views:cloneJ(VW),dh:doneHidden,df:doneFold}}
 function record(key){
   const now=Date.now();
   if(!(key&&key===lastKey&&now-lastT<1200)){UN.push(LAST);if(UN.length>100)UN.shift()}
@@ -2611,7 +2890,10 @@ function restore(s){
   /* 焦点在哪个输入框，重排之后放回去：撤销打的字时不用再点一次 */
   const ae=document.activeElement, bx=ae&&ae.closest?ae.closest('.anE'):null,
         fi=bx?Array.from(bx.querySelectorAll('textarea,input')).indexOf(ae):-1;
-  A=s.items.map(cloneAn);
+  A=s.items.map(cloneAn);G=cloneJ(s.groups||[]);doneHidden=!!s.dh;doneFold=!!s.df;
+  /* 视角跟着退回去；还在的那些，剖切深度留着现在的（拉滑块不算一步，不该被撤销带走） */
+  {const now=new Map(VW.map(v=>[v.id,v.clip]));VW=cloneJ(s.views||[]);
+   VW.forEach(v=>{if(now.has(v.id))v.clip=now.get(v.id)});VR.clear();vwEdit='';vwClip();renderViews()}
   /* 选中变回来的那一条：撤销删除 = 刚回来的，撤销改动 = 被改的那条 */
   let i=A.findIndex(a=>{const o=cur.get(a.id);return !o||!sameAn(o,a)});
   if(i<0&&keep) i=A.findIndex(a=>a.id===keep);
@@ -2625,11 +2907,13 @@ function restore(s){
 /* 做到一半能退的那一步。有引导点：退掉最后一个引导点。量尺寸：放尺寸线 → 退回取点；取点 → 退掉
    刚点的那个点。开槽：退掉起点 */
 function toolStep(){return !!tool&&(guided()||(tool.type==='notch'?!!tool.cut
+  :tool.type==='view'?tool.pts.length>0
   :tool.type==='dim'&&(tool.stage==='place'?!tool.replace:tool.pts.length>tool.keep)))}
 function undo(){
   if(toolStep()){
     if(guided()) tool.guide.pop();
     else if(tool.type==='notch') tool.cut=null;
+    else if(tool.type==='view') tool.pts.pop();
     else if(tool.stage==='place'){tool.stage='pts';if(!tool.chain){tool.pts.pop();tool.dir=null}}   // 单次测量退掉第二个点
     else{tool.pts.pop();if(tool.pts.length<2&&!tool.edit)tool.dir=null}
     hover=null;hud();undoBtns();if(hovXY)hoverNow();else draw(false);return}
@@ -2655,8 +2939,8 @@ function changed(structural,key){
   else if(sel>=0){fillRow(sel);const sb=document.getElementById('popS');if(sb&&A[sel]&&!isNote(A[sel]))sb.textContent=sub(A[sel])}
   counts();cap();autosave();state();undoBtns();draw(false);
 }
-function counts(){                       // 只数标注（文字、文件）
-  const N=A.filter(isNote), n=N.length, o=N.filter(a=>!a.done).length;
+function counts(){                       // 清单里一共几条、还有几条没处理
+  const n=A.length, o=A.filter(a=>!a.done).length;
   document.getElementById('annN').textContent=n?(o===n?n+' 条':n+' 条，'+o+' 条没处理'):'';
   const b=document.getElementById('tog2n');b.textContent=n||'';b.hidden=!n;
   infoBtn();
@@ -2679,21 +2963,23 @@ function sub(an){
   if(an.type==='dim'){const q=dimGeo(an,false); if(!q) return '原来那块板找不到了';
     const k=axW(PIDX.get(an.pts[0].pn),an.dir), d=k>=0?' · '+AXL[k]+' 向':an.dir?' · 斜向':'';
     return (an.chain?an.pts.length+' 个点，总长 ':'')+fmtD(q.len)+' mm'+d}
-  if(an.type==='doc') return an.media.length?an.media.length+' 个文件':'还没有文件';
   return '';
 }
+/* 卡片上的三行：标题；是什么、在哪、多大、几个文件；说明的头一行 */
+function rowText(an){
+  return [an.title||'（没有标题）',
+    [tname(an),where(an),sub(an),an.media.length?an.media.length+' 个文件':''].filter(Boolean).join(' · '),
+    an.text.split('\n')[0].trim()]}
 function fillRow(i){
   const an=A[i], box=document.querySelector('#annList .an[data-i="'+i+'"]'); if(!an||!box) return;
-  const w=where(an), s=sub(an); let t1, t2;
-  if(an.type==='note'){t1=an.text.split('\n')[0].trim()||'文字（还没写）';t2=w}
-  else if(an.type==='doc'){t1=an.media.length?an.media.map(m=>m.n||'未命名').join('、'):'文件（还没有）';t2=[s,w].filter(Boolean).join(' · ')}
-  else{t1=tname(an)+(w?' · '+w:'');t2=s}
-  box.querySelector('.t1').textContent=t1;
-  box.querySelector('.t2').textContent=t2;
-  box.classList.toggle('done',an.done);
-  const n=box.querySelector('.num');n.style.background=an.color;n.style.color=ink(an.color);
-  /* 文字里的网址：在这一条下面列出来，点了新开一页 */
-  const L=box.querySelector('.anL'), ls=an.type==='note'?linksOf(an.text):[];
+  const t=rowText(an);
+  box.querySelector('.t1').textContent=t[0];
+  box.querySelector('.t2').textContent=t[1];
+  box.querySelector('.t3').textContent=t[2];
+  box.classList.toggle('done',an.done);box.classList.toggle('hid',effHidden(an));
+  box.querySelector('.num').style.background=effColor(an);
+  /* 说明里的网址：在这一条下面列出来，点了新开一页 */
+  const L=box.querySelector('.anL'), ls=linksOf(an.text);
   L.textContent='';L.hidden=!ls.length;ls.forEach(p=>L.appendChild(linkEl(p)));
 }
 const MK_NAME={link:'链接',vid:'视频',aud:'录音',file:'文件'};
@@ -2706,7 +2992,7 @@ function fillMedia(i,host,edit){
     e.title=m.n||m.u||'';e.tabIndex=0;e.setAttribute('role','button');
     e.onclick=ev=>{ev.stopPropagation();openMedia(m)};
     e.onkeydown=ev=>{if(ev.key==='Enter'){ev.preventDefault();openMedia(m)}};
-    if(edit){const x=el('button','mx','×');x.title='去掉这个附件';x.setAttribute('aria-label','去掉这个附件');
+    if(edit){const x=el('button','mx','×');x.title='去掉这个文件';x.setAttribute('aria-label','去掉这个文件');
       x.onclick=ev=>{ev.stopPropagation();an.media.splice(k,1);changed(true)};e.appendChild(x)}
     host.appendChild(e);
   });
@@ -2735,7 +3021,7 @@ async function addFiles(an,files){
       let d;
       if(/^image\/(jpeg|png|webp|bmp|heic|heif)$/.test(f.type)) d=await shrink(f);
       else{
-        if(f.size>15e6){toast('「'+f.name+'」有 '+Math.round(f.size/1e6)+' MB，太大放不进文件；请传到网盘，再用文字标注写上网址');continue}
+        if(f.size>15e6){toast('「'+f.name+'」有 '+Math.round(f.size/1e6)+' MB，太大放不进文件；请传到网盘，再把网址写进说明里');continue}
         d=await readURL(f);
       }
       const m=normMedia({n:f.name,d});
@@ -2746,30 +3032,44 @@ async function addFiles(an,files){
 }
 function pickFiles(an,acc){const f=document.getElementById('fMedia');f.accept=acc;f.value='';
   f.onchange=()=>addFiles(an,Array.from(f.files));f.click()}
-/* 八个色点 */
-function colorDots(an){
-  const cr=el('div','cols');
-  COLORS.forEach((c,k)=>{const b=el('button','cdot'+(an.color===c?' on':''));b.style.background=c;
-    b.title=CNAME[k];b.setAttribute('aria-label','颜色：'+CNAME[k]);b.onclick=()=>{an.color=c;changed(true)};cr.appendChild(b)});
+/* 八个色点：cur 现在是哪个，pick(c) 点了哪个；lock 为真就只是看看、点不了 */
+function colorDots(cur,pick,lock){
+  const cr=el('div','cols'+(lock?' lock':''));
+  COLORS.forEach((c,k)=>{const b=el('button','cdot'+(cur===c?' on':''));b.type='button';b.style.background=c;
+    b.title=CNAME[k];b.setAttribute('aria-label','颜色：'+CNAME[k]);b.disabled=!!lock;b.onclick=()=>pick(c);cr.appendChild(b)});
   return cr;
 }
-/* 清单里一条标注（文字 / 文件）展开后的编辑区：字或文件、颜色、已处理、视角、删除 */
+/* 一条自己的颜色。已处理的统一是浅灰、所在的群组指定了颜色就跟着群组：这两种时候色点点不了，旁边写着为什么 */
+function annColors(an){
+  const g=grpOf(an), why=an.done?'已处理的统一显示成浅灰':(g&&g.color)?'颜色跟着群组「'+g.name+'」':'',
+        w=el('div'), cr=colorDots(!an.done&&g&&g.color?g.color:an.color,c=>{an.color=c;changed(true)},!!why);
+  w.appendChild(cr);if(why)w.appendChild(el('div','mini',why));return w;
+}
+/* 清单里一张卡片展开后的编辑区（五种东西一个样）：标题、说明、上传文件、颜色、群组、视角（标注才有）、删除。
+   「已处理」是卡片左边那个勾，「隐藏」是卡片右上角那只眼睛 —— 不展开也点得着 */
 function editor(an,i){
   const e=el('div','anE'), row=()=>{const r=el('div','row');e.appendChild(r);return r};
-  /* 字只有文字标注能写 */
-  if(an.type==='note'){const ta=el('textarea');ta.value=an.text;ta.placeholder=PH.note;ta.setAttribute('aria-label','文字');
-    ta.oninput=()=>{an.text=ta.value;changed(false,'text:'+an.id)};e.appendChild(ta)}
-  const cr=colorDots(an);e.appendChild(cr);
-  const dl=el('label','dn'), dc=el('input');dc.type='checkbox';dc.checked=an.done;
-  dc.onchange=()=>{an.done=dc.checked;changed(false)};dl.appendChild(dc);dl.appendChild(document.createTextNode('已处理'));
-  cr.appendChild(dl);
-  /* 文件只有文件标注能挂：照片、PDF、视频……（网址写在文字标注里） */
-  if(an.type==='doc'){const ar=row(), b1=el('button',null,'加照片'), b2=el('button',null,'加文件');
-    b2.title='PDF、视频、图纸……什么文件都行';
-    ar.appendChild(b1);ar.appendChild(b2);
-    b1.onclick=()=>pickFiles(an,'image/*');b2.onclick=()=>pickFiles(an,'')}
+  /* 标题：起了名字才在模型上显示；清空了就还它一个「无标题 N」 */
+  const tl=el('label','fld','标题'), ti=el('input');
+  ti.type='text';ti.maxLength=60;ti.value=an.title;ti.placeholder='起了名字才在模型上显示';
+  ti.oninput=()=>{an.title=ti.value.replace(/\s+/g,' ').slice(0,60);changed(false,'title:'+an.id)};
+  ti.onblur=()=>{const t=an.title.trim();if(t&&t===an.title) return;
+    an.title=t||newTitle();ti.value=an.title;changed(false,'title:'+an.id)};
+  ti.onkeydown=ev=>{if(ev.key==='Enter'){ev.preventDefault();ti.blur()}};
+  tl.appendChild(ti);e.appendChild(tl);
+  /* 说明：写了才有模型上那个 i */
+  const dl=el('label','fld','说明'), ta=el('textarea');ta.value=an.text;ta.placeholder=PH.note;
+  ta.oninput=()=>{an.text=ta.value;changed(false,'text:'+an.id)};dl.appendChild(ta);e.appendChild(dl);
+  /* 上传文件：照片、PDF、视频、图纸……要传就传，不传就算了（网址直接写在说明里） */
+  const ub=el('button',null,'上传文件');ub.type='button';ub.title='照片、PDF、视频、图纸……什么文件都行；照片会缩小了再存';
+  ub.onclick=()=>pickFiles(an,'');row().appendChild(ub);
+  e.appendChild(annColors(an));
+  if(G.length){const gl=el('label','fld','群组'), sl=el('select');sl.setAttribute('aria-label','群组');
+    [['','不分组']].concat(G.map(g=>[g.id,g.name])).forEach(o=>{const op=el('option',null,o[1]);op.value=o[0];sl.appendChild(op)});
+    sl.value=grpOf(an)?an.grp:'';sl.onchange=()=>{an.grp=sl.value;changed(true)};
+    gl.appendChild(sl);e.appendChild(gl)}
   const vr=row();
-  if(placed(an)){const g1=el('button',null,'回到视角'), g2=el('button',null,'更新视角');
+  if(isNote(an)&&placed(an)){const g1=el('button',null,'回到视角'), g2=el('button',null,'更新视角');
     g1.onclick=()=>{an.view?applyView(an.view,an):focusOn(an)};
     g2.onclick=()=>{an.view=getView();changed(false);toast('这一条的视角已改成现在的画面')};
     vr.appendChild(g1);vr.appendChild(g2)}
@@ -2779,8 +3079,8 @@ function editor(an,i){
   vr.appendChild(g3);
   return e;
 }
-/* 画在模型上的东西（测量、高亮、槽口、开洞）的小界面里放什么：各自的尺寸 / 读数、颜色、删除。
-   没有说明、没有附件、没有视角、没有「已处理」—— 那些是标注的事 */
+/* 画在模型上的东西（测量、高亮、槽口、开洞）点中时旁边那个小界面里放什么：各自的尺寸 / 读数、颜色、删除。
+   标题、说明、文件、群组在清单里它的那张卡片上改 */
 function markEditor(an,i){
   const e=el('div','anE'), row=()=>{const r=el('div','row');e.appendChild(r);return r};
   if(an.type==='notch'||an.type==='hole'){
@@ -2821,37 +3121,123 @@ function markEditor(an,i){
       if(an.chain){const ad=el('button',null,'继续加点');ad.onclick=()=>startTool('dimc',an);row().appendChild(ad)}
     }else e.appendChild(el('div','issue','原来那块板找不到了：这条尺寸画不出来。'));
   }
-  e.appendChild(colorDots(an));
+  e.appendChild(annColors(an));
   const g3=el('button','del','删除');
   g3.title='点了就删；删错了按撤销（Ctrl+Z）';
   g3.onclick=()=>{A.splice(i,1);sel=-1;changed(true)};
   row().appendChild(g3);
   return e;
 }
-/* 清单里只有标注（文字、文件），带编号。画在模型上的东西（测量、高亮、槽口、开洞）不进清单 ——
-   要改就在模型上点它（见 renderPop） */
+/* ---------- 清单：照待办清单的样子 ---------- */
+/* 从上到下：没分组的卡片 → 一个个群组（一行组头，下面是它的卡片）→ 已处理（勾了的都归到这儿，
+   不管原来在哪一组；去掉勾就回原来的组）。
+   卡片：左边一个勾（已处理）、一个色点、三行字（标题 / 是什么在哪 / 说明头一行）、右上角一只眼睛（隐藏）；
+   点卡片 = 选中它、镜头转过去，再点一下收起。卡片能拖到组头上换组（手机上在展开后的「群组」里选）。
+   组头：折叠箭头、颜色、名字、条数、眼睛、铅笔（改名、换颜色、删除群组）。
+   折叠只是清单的样子：存下来，不算一步撤销。 */
+let gEdit='', gFocus=false;            // 正开着编辑区的那个群组；刚新建的，名字框要拿到焦点
+function dropOn(e,fn){
+  e.ondragover=ev=>{ev.preventDefault();e.classList.add('drop')};
+  e.ondragleave=()=>e.classList.remove('drop');
+  e.ondrop=ev=>{ev.preventDefault();e.classList.remove('drop');let id='';
+    try{id=ev.dataTransfer.getData('text/plain')}catch(_){}
+    const a=A.find(x=>x.id===id);if(a)fn(a)}}
+function card(i,host){
+  const an=A[i], on=i===sel, box=el('div','an'+(on?' sel':''));box.dataset.i=i;
+  const h=el('div','anH'), t=el('div','anT'), ck=el('input');
+  h.tabIndex=0;h.setAttribute('role','button');h.setAttribute('aria-expanded',on?'true':'false');
+  ck.type='checkbox';ck.className='ck';ck.checked=an.done;ck.title='已处理';ck.setAttribute('aria-label','已处理');
+  ck.onclick=ev=>ev.stopPropagation();
+  ck.onchange=()=>{an.done=ck.checked;changed(true)};
+  h.appendChild(ck);h.appendChild(el('span','num'));
+  t.appendChild(el('div','t1'));t.appendChild(el('div','t2 mini'));t.appendChild(el('div','t3'));h.appendChild(t);
+  h.appendChild(ibtn(an.hidden?'eyeOff':'eye',an.hidden?'藏着：点一下显示':'隐藏（模型上不画）',
+    ()=>{an.hidden=!an.hidden;changed(true)},an.hidden?'off':''));
+  const go=()=>{if(i===sel){select(-1);return}select(i,true);if(NARROW.matches)closeAnn()};
+  h.onclick=go;h.onkeydown=ev=>{if(ev.target===h&&(ev.key==='Enter'||ev.key===' ')){ev.preventDefault();go()}};
+  h.draggable=true;
+  h.ondragstart=ev=>{try{ev.dataTransfer.setData('text/plain',an.id);ev.dataTransfer.effectAllowed='move'}catch(_){}};
+  box.appendChild(h);
+  box.appendChild(el('div','anL'));
+  const m=el('div','anM');box.appendChild(m);
+  host.appendChild(box);
+  fillRow(i);fillMedia(i,m,on);
+  if(on)box.appendChild(editor(an,i));
+}
+function foldBtn(f,fn){return ibtn(f?'right':'down',f?'展开':'折叠',fn)}
+function groupHead(g,n){
+  const h=el('div','gh'+(g.hidden?' hid':'')), c=el('span','gc'+(g.color?'':' no')), nm=el('span','gn',g.name),
+        fold=()=>{g.fold=!g.fold;renderList();autosave()};
+  h.dataset.g=g.id;
+  h.appendChild(foldBtn(g.fold,fold));
+  if(g.color)c.style.background=g.color;c.title=g.color?'这一组统一用这个颜色':'没指定颜色：各用各的';h.appendChild(c);
+  nm.title=g.name;nm.onclick=fold;h.appendChild(nm);
+  h.appendChild(el('span','mini',String(n)));
+  h.appendChild(ibtn(g.hidden?'eyeOff':'eye',g.hidden?'这一组藏着：点一下显示':'隐藏这一组（模型上不画）',
+    ()=>{g.hidden=!g.hidden;changed(true)},g.hidden?'off':''));
+  h.appendChild(ibtn('pen','改名、换颜色、删除群组',()=>{gEdit=gEdit===g.id?'':g.id;gFocus=!!gEdit;renderList()}));
+  dropOn(h,a=>{a.grp=g.id;a.done=false;changed(true)});
+  return h;
+}
+function groupEditor(g){
+  const e=el('div','ge'), inp=el('input');
+  inp.type='text';inp.maxLength=40;inp.value=g.name;inp.setAttribute('aria-label','群组的名字');
+  inp.oninput=()=>{const s=inp.value.replace(/\s+/g,' ').trim();if(!s) return;
+    g.name=s.slice(0,40);changed(false,'gname:'+g.id);
+    const hn=document.querySelector('#annList .gh[data-g="'+g.id+'"] .gn');if(hn)hn.textContent=g.name};
+  inp.onkeydown=ev=>{if(ev.key==='Enter'){ev.preventDefault();gEdit='';renderList()}};
+  e.appendChild(inp);
+  /* 颜色：选了哪个，这一组里的东西就都是哪个颜色；「不指定」= 各用各的 */
+  const cr=colorDots(g.color,c=>{g.color=c;changed(true)}), no=el('button','inl'+(g.color?'':' on'),'不指定');
+  no.type='button';no.title='各用各的颜色';no.onclick=()=>{g.color='';changed(true)};cr.appendChild(no);
+  e.appendChild(cr);
+  const r=el('div','row'), ok=el('button',null,'好了'), d=el('button','del','删除群组');
+  ok.type='button';ok.onclick=()=>{gEdit='';renderList()};
+  d.type='button';d.title='只删这个组，里面的东西变成不分组；删错了按撤销（Ctrl+Z）';
+  d.onclick=()=>{A.forEach(a=>{if(a.grp===g.id)a.grp=''});G.splice(G.indexOf(g),1);gEdit='';changed(true)};
+  r.appendChild(ok);r.appendChild(d);e.appendChild(r);
+  if(gFocus){gFocus=false;setTimeout(()=>{try{inp.focus();inp.select()}catch(_){}},0)}
+  return e;
+}
+function addGroup(){
+  const g={id:nid(),name:freeName('群组',G.map(x=>x.name)),color:'',hidden:false,fold:false};
+  G.push(g);gEdit=g.id;gFocus=true;openAnn();changed(true);
+}
 function renderList(){
   const host=document.getElementById('annList');host.textContent='';
-  if(!A.some(isNote))host.appendChild(el('div','mini','还没有标注。点上面的「文字标注」「文件标注」，再到模型上点位置。'));
-  A.forEach((an,i)=>{ if(!isNote(an)) return;
-    const on=i===sel, box=el('div','an'+(on?' sel':''));box.dataset.i=i;
-    const h=el('div','anH'), t=el('div','anT');
-    h.tabIndex=0;h.setAttribute('role','button');h.setAttribute('aria-expanded',on?'true':'false');
-    h.appendChild(el('span','num',String(numOf(i))));
-    t.appendChild(el('div','t1'));t.appendChild(el('div','t2 mini'));h.appendChild(t);
-    const go=()=>{if(i===sel){select(-1);return}select(i,true);if(NARROW.matches)closeAnn()};
-    h.onclick=go;h.onkeydown=ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();go()}};
-    box.appendChild(h);
-    box.appendChild(el('div','anL'));
-    const m=el('div','anM');box.appendChild(m);
-    host.appendChild(box);
-    fillRow(i);fillMedia(i,m,on);
-    if(on)box.appendChild(editor(an,i))});
+  if(!A.length&&!G.length)host.appendChild(el('div','mini','还没有东西。点上面的按钮，再到模型上点位置。'));
+  const idx=A.map((_,i)=>i), open=idx.filter(i=>!A[i].done), dn=idx.filter(i=>A[i].done),
+        zone=()=>{const z=el('div','gz');host.appendChild(z);return z};
+  /* 没分组的排在最前面；有群组的时候给它也安一行头，卡片能拖回来 */
+  const free=open.filter(i=>!grpOf(A[i]));
+  if(G.length){const h=el('div','gh'), nm=el('span','gn','未分组');nm.style.cursor='default';
+    h.appendChild(nm);h.appendChild(el('span','mini',String(free.length)));
+    dropOn(h,a=>{a.grp='';a.done=false;changed(true)});host.appendChild(h)}
+  {const z=zone();free.forEach(i=>card(i,z))}
+  G.forEach(g=>{
+    const mine=open.filter(i=>A[i].grp===g.id);
+    host.appendChild(groupHead(g,mine.length));
+    if(gEdit===g.id)host.appendChild(groupEditor(g));
+    if(!g.fold){const z=zone();mine.forEach(i=>card(i,z))}
+  });
+  /* 已处理：最下面那一组。模型上统一是浅灰；它也能整组藏起来 */
+  if(dn.length){
+    const h=el('div','gh'+(doneHidden?' hid':'')), c=el('span','gc'), nm=el('span','gn','已处理'),
+          fold=()=>{doneFold=!doneFold;renderList();autosave()};
+    h.appendChild(foldBtn(doneFold,fold));
+    c.style.background=DONEC;h.appendChild(c);nm.onclick=fold;h.appendChild(nm);
+    h.appendChild(el('span','mini',String(dn.length)));
+    h.appendChild(ibtn(doneHidden?'eyeOff':'eye',doneHidden?'已处理的都藏着：点一下显示':'隐藏已处理的（模型上不画）',
+      ()=>{doneHidden=!doneHidden;changed(true)},doneHidden?'off':''));
+    dropOn(h,a=>{a.done=true;changed(true)});
+    host.appendChild(h);
+    if(!doneFold){const z=zone();dn.forEach(i=>card(i,z))}
+  }
 }
 /* ---------- 画上去的东西：点一下，在旁边弹出一个半透明的小界面 ---------- */
-/* 用户（2026-11-14）：「测量、高亮、槽口、开洞，这些不需要绑定视角，也不需要体现在主列表里面。但是修改还是
-   需要的，修改就是点一下，在旁边弹出一个半透明小界面，里面可以做一些更改，比如说改颜色、相对尺寸改绝对
-   尺寸，或者就是删除」。
+/* 用户（2026-11-14）：「测量、高亮、槽口、开洞……修改就是点一下，在旁边弹出一个半透明小界面，里面可以做一些
+   更改，比如说改颜色、相对尺寸改绝对尺寸，或者就是删除」。（2026-11-15 起它们也进清单了：标题、说明、文件、
+   群组在清单的卡片上改；尺寸、读数、放置这些还在这个小界面里。）
    sel 指着一个画上去的东西时，小界面开着；点别处、按 Esc、点 ×、去用工具，就收起来。
    它跟着那个东西走：每画一帧挪到它旁边（尺寸是点中的那一段旁边，popT 记着点在尺寸线的哪儿，0～1）。 */
 let popXY=null, popT=.5, popId='';
@@ -2870,7 +3256,7 @@ function popPlace(){
 }
 function renderPop(){
   const P=document.getElementById('pop'), an=sel>=0?A[sel]:null;
-  if(!an||isNote(an)||tool){P.hidden=true;P.textContent='';popXY=null;return}
+  if(!an||isNote(an)||tool||!placed(an)||effHidden(an)){P.hidden=true;P.textContent='';popXY=null;return}
   if(an.id!==popId){popId=an.id;popT=.5}
   if(popXY){                                      // 刚在模型上点中的：记下点在尺寸线的哪儿
     if(an.type==='dim'){const g=dimGeo(an,true);
@@ -2884,19 +3270,19 @@ function renderPop(){
   x.title='关闭';x.setAttribute('aria-label','关闭');x.onclick=()=>select(-1);hd.appendChild(x);
   P.appendChild(hd);P.appendChild(markEditor(an,sel));P.hidden=false;popPlace();
 }
-/* 手机上列表抽屉收起时，选中的那条在底部出一张小卡片：说明、附件、上一条 / 下一条 */
+/* 手机上列表抽屉收起时，选中的那条标注在底部出一张小卡片：标题、说明、文件、上一条 / 下一条 */
 function cap(){
   const c=document.getElementById('cap');
   const show=sel>=0&&!!A[sel]&&isNote(A[sel])&&!tool&&NARROW.matches&&!document.body.classList.contains('ann-open');
   c.hidden=!show;document.body.classList.toggle('has-cap',show);
   if(!show) return;
-  const an=A[sel], n=document.getElementById('capN');
-  n.textContent=numOf(sel);n.style.background=an.color;n.style.color=ink(an.color);
-  document.getElementById('capT').textContent=[tname(an),where(an)].filter(Boolean).join(' · ');
-  document.getElementById('capS').textContent=sub(an);
+  const an=A[sel], N=A.map((a,k)=>isNote(a)?k:-1).filter(k=>k>=0);
+  document.getElementById('capN').style.background=effColor(an);
+  document.getElementById('capT').textContent=an.title;
+  document.getElementById('capS').textContent=[where(an),sub(an)].filter(Boolean).join(' · ');
   putText(document.getElementById('capX'),an.text);
   fillMedia(sel,document.getElementById('capM'),false);
-  document.getElementById('capI').textContent=numOf(sel)+' / '+A.filter(isNote).length;
+  document.getElementById('capI').textContent=(N.indexOf(sel)+1)+' / '+N.length;
 }
 
 /* ---------- 保存 / 导出 / 导入 ---------- */
@@ -2914,12 +3300,24 @@ function state(){
 }
 function loadItems(items){const have=new Set();A=[];
   (Array.isArray(items)?items:[]).forEach(o=>normAll(o).forEach(an=>{if(!have.has(an.id)){have.add(an.id);A.push(an)}}));
-  A.forEach(relink)}
+  A.forEach(relink);nameAll()}
+/* 读一整份：标注、群组、视角、已处理那一组的样子（老版本的文件只有标注） */
+function uniq(list){const have=new Set();return list.filter(x=>x&&!have.has(x.id)&&have.add(x.id))}
+function loadAll(o){
+  o=o||{};
+  G=uniq((Array.isArray(o.groups)?o.groups:[]).map(normGroup));
+  VW=uniq((Array.isArray(o.views)?o.views:[]).map(normView));VR.clear();vwEdit='';gEdit='';
+  doneHidden=!!(o.st&&o.st.dh);doneFold=!!(o.st&&o.st.df);
+  loadItems(o.items);
+  if(vwOn!=='top'&&!vwGet(vwOn))vwOn='top';
+}
+/* 草稿和文件里带的是不是一回事（折没折、剖切到哪不算） */
+function sigAll(){return JSON.stringify([A,G,VW.map(v=>[v.id,v.name,v.o,v.x,v.y]),doneHidden])}
 function resetDraft(){
   try{localStorage.removeItem(LSKEY)}catch(_){}
   if(tool)endTool();
-  loadItems(ANN0.items);fromDraft=false;dirty=false;sel=-1;record();
-  rebuildMarks();renderList();renderPop();counts();state();cap();undoBtns();draw(false);
+  loadAll(ANN0);fromDraft=false;dirty=false;sel=-1;record();
+  vwClip();renderViews();rebuildMarks();renderList();renderPop();counts();state();cap();undoBtns();draw(false);
 }
 /* 带标注的整页源码：把 SRC 里那块标注数据换成现在的。< 写成 <，数据里就不会
    出现能提前结束 script 的字样 */
@@ -2936,14 +3334,18 @@ function download(name,text,type){
   a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();
   setTimeout(()=>URL.revokeObjectURL(u),30000);
 }
-/* 清单的文字版：只有标注（文字、文件），带编号。画在模型上的东西不进清单 */
+/* 清单的文字版：和清单一个顺序 —— 没分组的、一个个群组、已处理。一条一行：标题【是什么】在哪；多大；说明；文件 */
 function listText(){
-  const N=[]; A.forEach((an,i)=>{if(isNote(an))N.push(i)});
-  let s=(D.job?D.job+' ':'')+'框架模型标注（共 '+N.length+' 条）';
-  N.forEach(i=>{const an=A[i], w=where(an);
-    s+='\n'+numOf(i)+'. 【'+tname(an)+'】'+(w?w+'：':'')+
-      (an.type==='note'?an.text.replace(/\s*\n\s*/g,' '):an.media.length?an.media.map(m=>m.n||'未命名').join('、'):'还没有文件')+
-      (an.done?'（已处理）':'')});
+  const line=an=>'· '+an.title+'【'+tname(an)+'】'+
+    [where(an),sub(an),an.text.replace(/\s*\n\s*/g,' ').trim(),
+     an.media.length?'文件：'+an.media.map(m=>m.n||'未命名').join('、'):''].filter(Boolean).join('；')+
+    (an.done?'（已处理）':'');
+  const open=A.filter(a=>!a.done), dn=A.filter(a=>a.done);
+  let s=(D.job?D.job+' ':'')+'框架模型标注（共 '+A.length+' 条）';
+  open.filter(a=>!grpOf(a)).forEach(a=>{s+='\n'+line(a)});
+  G.forEach(g=>{const m=open.filter(a=>a.grp===g.id); if(!m.length) return;
+    s+='\n【'+g.name+'】';m.forEach(a=>{s+='\n'+line(a)})});
+  if(dn.length){s+='\n【已处理】';dn.forEach(a=>{s+='\n'+line(a)})}
   return s;
 }
 function importText(s){
@@ -2951,11 +3353,19 @@ function importText(s){
   try{const m=/<script[^>]*id="ann0"[^>]*>([\s\S]*?)<\/script>/.exec(s);o=JSON.parse(m?m[1]:s)}catch(_){}
   const items=Array.isArray(o)?o:(o&&o.items);
   if(!Array.isArray(items)){toast('这个文件里没有找到标注');return}
-  const have=new Set(A.map(a=>a.id));let n=0;
-  items.forEach(x=>normAll(x).forEach(an=>{if(!have.has(an.id)){relink(an);A.push(an);have.add(an.id);n++}}));
-  if(n)changed(true);
+  const have=new Set(A.map(a=>a.id)), used=new Set(A.map(a=>a.title));let n=0, ng=0, nv=0;
+  /* 文件里的群组、视角一起带进来（已经有的不重复加） */
+  const hg=new Set(G.map(g=>g.id)), hv=new Set(VW.map(v=>v.id));
+  (o&&Array.isArray(o.groups)?o.groups:[]).map(normGroup).forEach(g=>{if(g&&!hg.has(g.id)){G.push(g);hg.add(g.id);ng++}});
+  (o&&Array.isArray(o.views)?o.views:[]).map(normView).forEach(v=>{if(v&&!hv.has(v.id)){VW.push(v);hv.add(v.id);nv++}});
+  items.forEach(x=>normAll(x).forEach(an=>{if(!have.has(an.id)){relink(an);
+    if(untitled(an)&&used.has(an.title))an.title='';            // 还叫「无标题 N」又和现有的重名：重新排一个
+    A.push(an);have.add(an.id);n++}}));
+  nameAll();
+  if(n||ng||nv){changed(true);if(nv)renderViews()}
   const other=o&&o.job&&D.job&&o.job!==D.job;
-  toast(n?'导入了 '+n+' 条标注'+(other?'。注意：这份标注是 '+o.job+' 的，和当前模型不是同一个工程，位置可能对不上':'')
+  toast(n||ng||nv?'导入了 '+n+' 条标注'+(ng?'、'+ng+' 个群组':'')+(nv?'、'+nv+' 个视角':'')+
+          (other?'。注意：这份标注是 '+o.job+' 的，和当前模型不是同一个工程，位置可能对不上':'')
          :'没有新的标注（文件里的都已经在了）');
 }
 
@@ -2967,6 +3377,7 @@ document.getElementById('annHead').onclick=e=>{
 document.getElementById('annHead').onkeydown=e=>{
   if(e.target===e.currentTarget&&(e.key==='Enter'||e.key===' ')){e.preventDefault();e.currentTarget.click()}};
 document.getElementById('togI').onclick=infoAll;
+document.getElementById('bGrp').onclick=addGroup;
 document.getElementById('bUndo').onclick=undo;
 document.getElementById('bRedo').onclick=redo;
 tog2.onclick=()=>{document.body.classList.contains('ann-open')?closeAnn():openAnn()};
@@ -3021,13 +3432,12 @@ addEventListener('beforeunload',e=>{if(dirty&&!lsOK){e.preventDefault();e.return
 
 /* 开页面：文件里带的标注；这个浏览器里要是有同一份文件没保存完的草稿，接着用草稿 */
 (function(){
-  const emb=Array.isArray(ANN0.items)?ANN0.items:[];
-  loadItems(emb);const s0=JSON.stringify(A);
+  loadAll(ANN0);const s0=sigAll();
   try{const s=localStorage.getItem(LSKEY), d=s&&JSON.parse(s);
-    if(d&&Array.isArray(d.items)){loadItems(d.items);fromDraft=JSON.stringify(A)!==s0}}
-  catch(_){loadItems(emb)}
+    if(d&&Array.isArray(d.items)){loadAll(d);fromDraft=sigAll()!==s0}}
+  catch(_){loadAll(ANN0)}
   dirty=fromDraft;LAST=snapA();
-  renderList();counts();state();undoBtns();
+  vwClip();renderViews();renderList();counts();state();undoBtns();
 })();
 
 rebuild(); resize();
