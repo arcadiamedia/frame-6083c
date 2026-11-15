@@ -77,7 +77,6 @@ td:first-child{color:var(--dim);padding-right:8px;white-space:nowrap}
 .anH{display:flex;gap:7px;padding:3px 4px 3px 8px;cursor:pointer;align-items:center}
 .num{flex:none;width:11px;height:11px;border-radius:50%;box-shadow:0 0 0 1px rgba(255,255,255,.3)}
 .anH .ty{flex:none}
-#capN{width:14px;height:14px}
 /* 清单照待办清单的样子：每一条左边一个方格（多选），右边一个眼睛（隐藏）；能归到群组里，
    群组一行：全选的方格、折叠箭头、颜色、名字、条数、眼睛、改名。已完成的归到最下面那一组 */
 /* 设置：选中的那一条、或者勾着的那几条能改的东西。电脑上固定在模型的右下角（清单那一列的左边），手机上在最底下。
@@ -152,7 +151,7 @@ button.ib.off{color:var(--bad)}
   border-radius:6px;padding:3px 6px;font:inherit;font-size:12px}
 .vwR input[type=number]:focus{outline:none;border-color:var(--acc)}
 .anL{display:flex;flex-direction:column;gap:3px;padding:0 8px 8px 36px}
-.anL a,#capX a{color:var(--acc);overflow-wrap:anywhere}
+.anL a{color:var(--acc);overflow-wrap:anywhere}
 .t1{flex:1;min-width:0;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .an.done .t1{text-decoration:line-through;color:var(--dim)}
 .anM{display:flex;flex-wrap:wrap;gap:8px;padding:0 8px 8px 36px}
@@ -224,17 +223,6 @@ body.ro .eo{display:none!important}
 /* 只读时右下角那一块：只是看 */
 .anV .vT{margin-top:8px;font-size:13px;font-weight:600;overflow-wrap:anywhere}
 .anV .vX{margin-top:6px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;line-height:1.5}
-#cap .capH{display:flex;align-items:center;gap:8px}
-#capT{flex:1;min-width:0;font-size:13px;font-weight:600}
-#capC{flex:none;min-width:0;width:36px;height:36px;padding:0;display:flex;align-items:center;
-  justify-content:center;background:transparent;border-color:transparent;color:var(--fg)}
-#capC svg{width:20px;height:20px}
-#capS{margin:2px 0 0 28px}
-#capS:empty,#capX:empty{display:none}
-#capX{margin:6px 0 0;white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px}
-#capM{padding:8px 0 0}
-#cap .row{align-items:center}
-#capI{flex:none;padding:0 4px}
 #lb{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.9);display:flex;flex-direction:column;
   align-items:center;justify-content:center;gap:10px;padding:16px;cursor:zoom-out}
 #lb[hidden]{display:none}
@@ -253,37 +241,41 @@ body.ro .eo{display:none!important}
 body.side-open #tog .i-menu{display:none}
 body.side-open #tog .i-x{display:inline}
 @media (max-width:760px),(pointer:coarse){
+  /* 左上角那四个钮（侧栏、说明、动态视角、只读）36 见方。用户（2026-11-16，第二十二版）：「左上角四个按钮稍微
+     小一些」—— 原来 44 */
   #tog{display:flex;align-items:center;justify-content:center;top:12px;left:12px;z-index:3;
-    width:44px;height:44px;min-width:0;flex:none;padding:0}
-  #side{display:none;top:64px;width:min(260px,calc(100vw - 24px));
-    max-height:calc(100vh - 76px);max-height:calc(100dvh - 76px);z-index:2}
+    width:36px;height:36px;min-width:0;flex:none;padding:0}
+  #tog svg{width:20px;height:20px}
+  #side{display:none;top:56px;width:min(260px,calc(100vw - 24px));
+    max-height:calc(100vh - 68px);max-height:calc(100dvh - 68px);z-index:2}
   body.side-open #side{display:block}
-  /* 右上那一列拆开：信息框回到右上角（最高到半屏，别伸到底下的清单后面）；标注面板贴在屏幕底下 */
+  /* 右上那一列拆开：信息框回到右上角（最高到半屏，别伸到底下的清单后面）；事项面板贴在屏幕底下 */
   html,body{overscroll-behavior:none}                                /* 在清单上划到头，别把整页带着走 / 拉出刷新 */
   #rcol{display:contents}
   #rcol>.pane{position:fixed}
-  #info{top:12px;right:12px;width:min(262px,calc(100vw - 132px))}
+  #info{top:12px;right:12px;width:min(262px,calc(100vw - 116px))}
   #infoBody{max-height:calc(50vh - 48px);max-height:calc(50dvh - 48px)}
-  #togs{left:64px;right:auto;flex-direction:row-reverse}             /* 说明的开关在第二个，动态视角、只读排它后面 */
-  #togs>button{width:44px;height:44px;padding:0;justify-content:center}
+  #togs{left:56px;right:auto;flex-direction:row-reverse}             /* 说明的开关在第二个，动态视角、只读排它后面 */
+  #togs>button{width:36px;height:36px;padding:0;justify-content:center}
   #togIt,#togVt,#togRt{display:none}
-  /* 标注面板：一直在屏幕底下，最高占三分之一（可编辑时上面多了做东西的按钮，放到一半）；标题那一行点一下
+  /* 事项面板：一直在屏幕底下，最高占三分之一（可编辑时上面多了做东西的按钮，放到一半）；标题那一行点一下
      收起 / 展开，里面上下划着看。用户（2026-11-15，第二十一版）：「手机查看下面不要显示说明，在底部三分之一
      区域直接显示标注列表，可以上下滚动查看，也可以收起展开列表，这样左上角（旗子）按钮去掉，不需要了」。
-     让着别的：侧栏开着、选中了一条（底下换成它的卡片 / 设置）、正在做东西（底下是提示条）的时候不出 */
+     （2026-11-16，第二十二版）：「下面列表保持显示，直接在列表切换就可以了，不要那个上一条下一条」—— 选中一条
+     清单不让开了（原来换成它的一张卡片），那一行描金边，要看哪条点哪条。
+     让着别的：侧栏开着、单独一条的设置开着（点了那一行上的笔）、正在做东西（底下是提示条）的时候不出 */
   #ann{left:12px;right:12px;bottom:12px;top:auto;width:auto;z-index:2;padding:2px 12px 10px;
     max-height:33vh;max-height:33dvh}
   body:not(.ro) #ann{max-height:50vh;max-height:50dvh}
   #ann.fold{padding-bottom:2px}
-  body.side-open #ann,body.has-cap #ann,body.has-ed #ann,body.tooling #ann{visibility:hidden;pointer-events:none}
+  body.side-open #ann,body.has-ed #ann,body.tooling #ann{visibility:hidden;pointer-events:none}
   #annHead{min-height:44px}
   #annFold{width:22px;height:22px}
   #ann.fold #annFold{transform:rotate(180deg)}                       /* 收着：箭头朝上 */
   #annBody{display:block;overflow:auto;overscroll-behavior:contain;margin-top:0}
   #annList{overflow:visible;margin-top:2px}
-  #cap{left:12px;right:12px;bottom:12px;z-index:1;padding:10px 12px;max-height:46vh;overflow:auto}
   #ed{left:12px;right:12px;bottom:12px;width:auto;max-width:none;max-height:56vh;z-index:5;padding:10px 12px}
-  #ed.multi{top:64px;bottom:auto;max-height:calc(50vh - 88px);max-height:calc(50dvh - 88px)}   /* 勾着几条：处理的那一栏到上面去，清单还在底下接着勾 */
+  #ed.multi{top:56px;bottom:auto;max-height:calc(50vh - 80px);max-height:calc(50dvh - 80px)}   /* 勾着几条：处理的那一栏到上面去，清单还在底下接着勾 */
   #ed .cols{gap:9px}
   #ed .cdot{width:26px;height:26px}
   #ed .row button{padding:5px 6px}
@@ -294,6 +286,7 @@ body.side-open #tog .i-x{display:inline}
   button.ib{width:36px;height:36px}
   button.ib svg{width:19px;height:19px}
   .anH>button.ib{margin:-7px -4px -7px 0}
+  .anH>button.ib.pe{margin-right:-8px}       /* 选中那一行上的笔：和眼睛挨近些，标题多留点地方 */
   .ck{width:20px;height:20px;margin-top:0}
   .vwN{padding:9px 0;font-size:13px}
   .cdot{width:26px;height:26px}
@@ -342,7 +335,7 @@ body.side-open #tog .i-x{display:inline}
 
 <div id="rcol">
 <div class="pane" id="ann">
-  <div id="annHead" role="button" tabindex="0" aria-expanded="true" aria-controls="annBody"><h1>标注 <span class="mini" id="annN"></span></h1><button id="bUndo" class="ic eo" type="button" title="撤销（Ctrl+Z）" aria-label="撤销" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 010 11H11"/></svg></button><button id="bRedo" class="ic eo" type="button" title="重做（Ctrl+Shift+Z）" aria-label="重做" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 000 11H13"/></svg></button><svg id="annFold" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></div>
+  <div id="annHead" role="button" tabindex="0" aria-expanded="true" aria-controls="annBody"><h1>事项 <span class="mini" id="annN"></span></h1><button id="bUndo" class="ic eo" type="button" title="撤销（Ctrl+Z）" aria-label="撤销" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 010 11H11"/></svg></button><button id="bRedo" class="ic eo" type="button" title="重做（Ctrl+Shift+Z）" aria-label="重做" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 000 11H13"/></svg></button><svg id="annFold" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></div>
   <div id="annBody">
     <div class="row eo">
       <button data-tool="note">标注</button><button data-tool="hl">高亮构件</button>
@@ -360,7 +353,7 @@ body.side-open #tog .i-x{display:inline}
     </div>
     <div id="shareBox" hidden></div>
     <div class="row eo">
-      <button id="bExp">导出标注</button><button id="bImp">导入标注</button>
+      <button id="bExp">导出事项</button><button id="bImp">导入事项</button>
     </div>
     <div class="mini" id="annState"></div>
   </div>
@@ -368,13 +361,6 @@ body.side-open #tog .i-x{display:inline}
 <div class="pane" id="info"><button id="infoX" type="button" aria-label="关闭" title="关闭"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div id="infoBody"></div></div>
 </div>
 <div class="pane" id="hud"></div>
-<div class="pane" id="cap" hidden>
-  <div class="capH"><span class="num" id="capN"></span><div id="capT"></div><button id="capC" type="button" aria-label="关闭" title="关闭"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-  <div class="mini" id="capS"></div>
-  <div id="capX"></div>
-  <div class="anM" id="capM"></div>
-  <div class="row"><button id="capP">上一条</button><span class="mini" id="capI"></span><button id="capNx">下一条</button><button id="capE" class="eo">编辑</button></div>
-</div>
 <div class="pane" id="ed" hidden></div>
 <div id="lb" hidden><button id="lbX" type="button" aria-label="关闭" title="关闭"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div id="lbC"></div><div id="lbT"></div></div>
 <div id="toast" role="status" aria-live="polite"></div>
@@ -1016,6 +1002,9 @@ document.getElementById('exp').oninput=e=>{
    保存：每次改动自动存一份浏览器本地草稿；「保存 HTML」把标注写回本页源码（SRC 是
    脚本开头抓下来的原始页面）另存一份 —— 还是单个文件，发给别人打开就带着标注。
    标注里的字来自用户或别人给的文件，一律用 textContent 放进页面，不拼 HTML。 */
+/* 面板里的东西统称「事项」（面板的标题、导出 / 导入、提示里都这么叫）；「标注」只是其中一种，和槽口、开洞平级。
+   用户（2026-11-16，第二十二版）：「列表左上角标注二字改为事项，这和开槽等平级的标注选项重名，不太好」；
+   「导出标注、导入标注也改为导出事项、导入事项」。代码和注释里说的「标注」多半还是老叫法（= 事项） */
 const TYPES={hl:'构件高亮',notch:'槽口',hole:'开洞',dim:'尺寸',note:'标注'};
 /* 八种颜色，顺序是用户定的：绿 蓝 黄 橙 红 青 紫 黑 */
 const COLORS=['#3ddc5f','#2f9bff','#ffd60a','#ff9f0a','#ff453a','#19d3c5','#c56bff','#111111'];
@@ -1777,7 +1766,7 @@ function setRO(v){
   RO=v; if(!LOCK)try{localStorage.setItem('fp.ro',RO?'1':'0')}catch(_){}
   if(tool)endTool();
   SEL.clear();selTouched=false;edOpen=false;gEdit='';vwEdit='';shareOpen=false;
-  roBtn();renderViews();renderList();counts();cap();state();undoBtns();renderShare();draw(false);
+  roBtn();renderViews();renderList();counts();state();undoBtns();renderShare();draw(false);
 }
 function roToggle(){
   if(LOCK){toast('这一份是只读的：只能看，不能改');return}
@@ -2183,9 +2172,21 @@ function flyTo(y2,p2,d2,t2,r2,then){
     if(k<1)flyRAF=requestAnimationFrame(step);else{flyRAF=0;if(then)then()}};
   flyRAF=requestAnimationFrame(step);
 }
+/* 手机上清单一直在屏幕底下：它的顶在哪（CSS 像素）。不是手机、或者它让开了（侧栏、设置、做东西时）是 0 */
+function annTop(){
+  if(!NARROW.matches) return 0;
+  const a=document.getElementById('ann'), r=a&&a.getBoundingClientRect?a.getBoundingClientRect():null;
+  if(!r||!(r.height>0)||!(r.top>0)) return 0;
+  try{if(getComputedStyle(a).visibility==='hidden') return 0}catch(_){}
+  return r.top}
+/* 看得见的是清单上面那一块（顶上还有一排钮，到 56 为止）：那一块的中间比屏幕正中高出多少像素。清单收着差不多是 0 */
+function annLift(){const t=annTop();return t?Math.max(0,Math.round(cv.clientHeight/2-(56+t)/2)):0}
+/* 要让 w 落在那一块的中间，镜头该盯着哪一点（d：到时候的远近；角度照现在的）。电脑上就是 w 本身 */
+function aimAt(w,d){const up=annLift(); if(!up) return w;
+  const u=2*d*Math.tan(0.36)/Math.max(1,cv.clientHeight), y=camBasis().y;return [0,1,2].map(k=>w[k]-y[k]*up*u)}
 /* 面板没挡住的那一块屏幕（CSS 像素）：标注落在这里面才算看得见 */
 function safeRect(){const W=cv.clientWidth, H=cv.clientHeight;
-  if(NARROW.matches) return {x0:28,x1:W-28,y0:84,y1:Math.max(200,H-250)};
+  if(NARROW.matches){const t=annTop();return {x0:28,x1:W-28,y0:76,y1:Math.max(200,t?t-16:H-250)}}
   return W>980?{x0:290,x1:W-330,y0:50,y1:H-70}:{x0:30,x1:W-30,y0:50,y1:H-70}}
 /* 记下的画面搬到现在这块屏幕上：屏幕比当时窄（电脑上做的标注拿到手机竖屏上看）就退远
    一些 —— 按宽高比之差的平方根，左右多看到一些、东西又不至于缩得太小；标注要是还落在
@@ -2226,7 +2227,7 @@ function applyView(v,an){
   const f=frame(v,an);
   flyTo(v.yaw,v.pitch,f.d,f.t,v.roll||0);
 }
-function focusOn(an){const w=anchorW(an);if(w)flyTo(yaw,pitch,Math.min(dist,radius*.9),w)}
+function focusOn(an){const w=anchorW(an);if(w){const d=Math.min(dist,radius*.9);flyTo(yaw,pitch,d,aimAt(w,d))}}
 /* 全览要退到多远：整个模型都在画面里（竖屏窄，再退远些） */
 function fitDist(){const a=cv.clientWidth/Math.max(1,cv.clientHeight);return zoomTo(radius*2.6*(a>0&&a<1?1/a:1))}
 /* 这一条有多大（毫米）：尺寸是总长，槽口 / 开洞是那一块的对角，高亮是那根木料最长的一边，标注是一个点 */
@@ -2243,15 +2244,17 @@ const NEARK=.3;
 function zoomOn(an){
   const w=anchorW(an); if(!w) return;
   const fit=fitDist(), size=annSize(an), d=Math.min(fit,Math.max(size*3+1500,fit*NEARK)),
-        there=Math.abs(Math.log(dist/fit))<.03&&Math.hypot(pan[0],pan[1],pan[2])<radius*.02,
+        f0=aimAt(center,fit),                                                                   // 全览时盯着哪（手机上清单在底下，往上让）
+        there=Math.abs(Math.log(dist/fit))<.03&&Math.hypot(pan[0]-f0[0]+center[0],pan[1]-f0[1]+center[1],pan[2]-f0[2]+center[2])<radius*.02,
         W=cv.clientWidth, H=Math.max(1,cv.clientHeight), u=2*d*Math.tan(0.36)/H, half=size/2/u,      // 拉近以后一个像素多少毫米；它在屏幕上的半长
         P=document.getElementById('ed'), r=P&&!P.hidden&&P.getBoundingClientRect?P.getBoundingClientRect():null;
   /* 放在屏幕正中。右下角的设置要是会挡着它（它竖着、又够长），就往上让一让 —— 刚好露出来就行，也不顶出画面 */
   let up=0;
   if(r&&typeof r.top==='number'&&r.width>0&&r.left<W/2+half&&r.top<H/2+half+16) up=Math.min(H/2+half+16-r.top,Math.max(0,H/2-half-50));
+  if(!up) up=annLift();                                  // 手机上：清单上面那一块的中间
   const y=camBasis().y, t=up?[0,1,2].map(k=>w[k]-y[k]*up*u):w;
   if(there) flyTo(yaw,pitch,d,t);
-  else flyTo(yaw,pitch,fit,center,null,()=>flyTo(yaw,pitch,d,t));
+  else flyTo(yaw,pitch,fit,f0,null,()=>flyTo(yaw,pitch,d,t));
 }
 
 /* ---------- 视角：俯视，和三点定出来的 ---------- */
@@ -2411,9 +2414,9 @@ function startTool(t,ed,place){
   hover=null;showInfo(null);cv.style.cursor='crosshair';
   /* 手机上把侧栏收起来，把模型让出来（底下的清单做东西时自己让开，见 hud） */
   toolBtns();if(NARROW.matches){document.body.classList.remove('side-open');tog.setAttribute('aria-expanded','false')}
-  hud();cap();renderEd();undoBtns();draw(false);
+  hud();renderEd();undoBtns();draw(false);
 }
-function endTool(){tool=null;hover=null;cv.style.cursor='';toolBtns();hud();cap();renderEd();undoBtns();draw(false)}
+function endTool(){tool=null;hover=null;cv.style.cursor='';toolBtns();hud();renderEd();undoBtns();draw(false)}
 /* 这根木料上标的圆洞：两个口的圆心也能吸。q 圆心，na / s 这个口开在哪根轴的哪一头
    （朝着镜头的那个口才吸） */
 function holeCtrs(p){const r=[];
@@ -2973,7 +2976,7 @@ function tapAt(cx,cy,touch,multi){
   if(h&&h.med){openMedia(h.med);return}
   /* 点中清单里的东西（标注的那个点 / 标题、尺寸线、槽口 / 开洞的那一块）：选中它 —— 右下角出它的设置（renderEd）。
      用户（2026-11-15 夜）：「点击开槽、尺寸等对象不要在屏幕中间弹出设置项」；（深夜）「在模型右下角这个区域弹出
-     设置」。手机上不直接弹：底下出一张小卡片（cap），上面有「编辑」。
+     设置」。手机上不直接弹：清单一直在底下，它那一行描金边、多一支笔，点笔才出设置（edOpen）。
      multi（按着 Ctrl 点）：加进多选 / 从多选里去掉，清单里它的方格跟着勾上 —— 「模型里可以按住 Ctrl 多选那些对象，
      一旦触发了多选，也能触发在清单里的打钩多选操作」 */
   if(i>=0){showInfo(null);if(multi)pickMore(i);else select(i,false);return}
@@ -3063,11 +3066,11 @@ function addAnn(o){
 /* 单选一条（-1 = 都不选）：勾着的那些就都去掉 —— 单选和多选只有一样。
    fly（在清单里点的）：动态视角开着，回到做它时的视角（没记视角的把镜头挪过去）；关着，角度不变，先全览再拉近到它。
    选中的那条要是在折起来的组里，把那一组展开 */
-function select(i,fly,quiet){
+function select(i,fly){
   if(i!==sel)edOpen=false;
   sel=i;if(i>=0)SEL.clear();
   if(i>=0&&A[i]){const an=A[i], g=grpOf(an); if(an.done)doneFold=false; else if(g)g.fold=false}
-  renderList();cap();
+  renderList();
   if(i>=0){
     const an=A[i];
     if(fly){if(dynView&&an.view)applyView(an.view,an);
@@ -3076,14 +3079,6 @@ function select(i,fly,quiet){
   }
   draw(false);
 }
-/* 清单从上到下的次序：没分组的、一个个群组、已完成（和 renderList 排的一样） */
-function listOrder(){
-  const idx=A.map((_,i)=>i), open=idx.filter(i=>!A[i].done);
-  return open.filter(i=>!grpOf(A[i])).concat(...G.map(g=>open.filter(i=>A[i].grp===g.id)),idx.filter(i=>A[i].done))}
-/* 上一条 / 下一条（手机底下那张小卡片上的）：照清单的次序翻，五种东西都翻得到 */
-function step(d){const ids=listOrder(); if(!ids.length) return;
-  const k=ids.indexOf(sel);
-  select(ids[((k<0?0:k+d)%ids.length+ids.length)%ids.length],true,true)}
 /* ---------- 撤销 / 重做 ---------- */
 /* 每改一次，把改之前的整份标注压进撤销栈（最多 100 步）。附件的内容不复制，只记着是
    哪几个 —— 一张照片几百 KB，每步都抄一份吃不消。同一处连着改（打字、连点数字框）
@@ -3119,7 +3114,7 @@ function restore(s){
   if(i>=0&&!isNote(A[i])&&A[i].id!==keep) i=-1;
   if(selList().length) i=-1;
   sel=i;lastKey='';dirty=true;
-  rebuildMarks();renderList();counts();cap();autosave();state();undoBtns();draw(false);
+  rebuildMarks();renderList();counts();autosave();state();undoBtns();draw(false);
   if(fi>=0){const nb=document.querySelector('#ed .anE'), f=nb&&nb.querySelectorAll('textarea,input')[fi];
     if(f){f.focus();try{f.setSelectionRange(f.value.length,f.value.length)}catch(_){}}}
 }
@@ -3158,7 +3153,7 @@ function changed(structural,key){
   dirty=true;rebuildMarks();
   if(structural!==false) renderList();
   else{fillRows();syncF()}
-  counts();cap();autosave();state();undoBtns();draw(false);
+  counts();autosave();state();undoBtns();draw(false);
 }
 function counts(){                       // 清单里一共几条、还有几条没完成
   const n=A.length, o=A.filter(a=>!a.done).length;
@@ -3438,7 +3433,7 @@ let gEdit='', gFocus=false;            // 正开着编辑区的那个群组；�
    一排按钮 —— 标记完成 / 取消完成、隐藏 / 显示、删除、移到群组（含不分组、新建群组）；下面「一起改」——
    和单选一条时是同一套（editFor），每一项只改有它的那几条。一次处理 = 一步撤销，做完勾就都去掉 */
 let selFold=null;                      // 「一起改」那一块收没收着（没动过：电脑上开着；手机上地方小，收着）
-let edOpen=false;                      // 手机上：设置开没开着（选中了先出底下那张小卡片，点「编辑」才开）
+let edOpen=false;                      // 手机上：单独一条的设置开没开着（选中只是清单里那一行描金边；点那一行上的笔才开）
 let edKey='', edBusy=false;            // 设置里现在是谁的（换了人滚回顶上）；正在重排设置
 let selTouched=false;                  // 多选着、在「一起改」里打过字了：焦点一离开设置就算改完，把勾去掉
 function allBox(ids,name){
@@ -3449,7 +3444,7 @@ function allBox(ids,name){
   c.onchange=()=>selAll(ids,c.checked);
   return c}
 /* 勾变了：勾着东西就不单选谁了；清单、右下角的设置、模型上选中的样子都跟上 */
-function selChanged(){if(SEL.size){sel=-1;edOpen=false}renderList();cap();draw(false)}
+function selChanged(){if(SEL.size){sel=-1;edOpen=false}renderList();draw(false)}
 function selAll(ids,on){ids.forEach(id=>{if(on)SEL.add(id);else SEL.delete(id)});selChanged()}
 /* 按着 Ctrl 点（模型上的对象、清单里的一行）：加进多选 / 从多选里去掉。原来单选着的那一条也算进去 */
 function pickMore(i){
@@ -3484,9 +3479,10 @@ function softClear(){
   SEL.clear();selTouched=false;
   document.querySelectorAll('#annList input.ck').forEach(c=>{c.checked=false;c.indeterminate=false});
   document.querySelectorAll('#annList .an.sel').forEach(b=>{if(+b.dataset.i!==sel)b.classList.remove('sel')});
-  renderEd();cap();draw(false);
+  renderEd();draw(false);
 }
-/* 只读时右下角那一块：只是看 —— 标题、说明（里面的网址能点）、文件（能点开）。手机上是底下那张小卡片（cap） */
+/* 只读时右下角那一块：只是看 —— 标题、说明（里面的网址能点）、文件（能点开）。手机上只读时不出这一块：
+   清单一直在底下，说明和文件看模型上那一条旁边的框（oTag） */
 function viewFor(an){
   const e=el('div','anV');
   e.appendChild(el('div','vT',an.title));
@@ -3495,7 +3491,7 @@ function viewFor(an){
   return e;
 }
 /* 右下角的设置：勾着几条 → 一起处理的那排按钮 + 「一起改」；单选着一条 → 它的设置（只读时是 viewFor）；都没有 → 不出。
-   做东西做到一半（tool）让开；手机上单选的先出底下那张小卡片，点了「编辑」（edOpen）才出 */
+   做东西做到一半（tool）让开；手机上单选的不直接出（清单一直在底下），点了那一行上的笔（edOpen）才出 */
 function renderEd(){
   const P=document.getElementById('ed'), L=selList(), an=!L.length&&sel>=0?A[sel]:null,
         show=!tool&&(L.length>0||(!!an&&(!NARROW.matches||edOpen))), k=!show?'':L.length?'b':an.id,
@@ -3535,7 +3531,7 @@ function renderEd(){
       sb.classList.add('bk');
       sb._sync=()=>{sb.textContent=[where(an),sub(an)].filter(Boolean).join(' · ');sb.title=sb.textContent;dot.style.background=effColor(an)};
       sb._sync();hd.appendChild(sb);
-      hd.appendChild(ibtn('x','关闭',()=>{if(NARROW.matches){edOpen=false;renderEd();cap()}else select(-1)}));
+      hd.appendChild(ibtn('x','关闭',()=>{if(NARROW.matches){edOpen=false;renderEd()}else select(-1)}));
       P.appendChild(RO?viewFor(an):editFor([an],false));
     }
   }
@@ -3557,9 +3553,13 @@ function card(i,host){
   ck.onchange=()=>{if(ck.checked)SEL.add(an.id);else SEL.delete(an.id);selChanged()};
   if(!RO)h.appendChild(ck);h.appendChild(el('span','num'));
   h.appendChild(el('div','t1'));h.appendChild(el('span','ty mini'));
+  /* 手机上选中的那一行多一支笔：点它，底下换成它的设置（设置右上角的 × 回到清单）。电脑上选中了就在右下角出设置，
+     用不着它。用户（2026-11-16，第二十二版）：「下面列表保持显示，直接在列表切换就可以了，不要那个上一条下一条」——
+     原来手机上选中一条，清单换成它的一张卡片（标题、说明、文件、上一条 / 下一条、编辑）；卡片没了，「编辑」挪到这儿 */
+  if(!RO&&NARROW.matches&&i===sel)h.appendChild(ibtn('pen','改这一条',()=>{edOpen=true;renderEd()},'pe'));
   h.appendChild(ibtn(an.hidden?'eyeOff':'eye',an.hidden?'藏着：点一下显示':'隐藏（模型上不画）',
     ()=>{an.hidden=!an.hidden;changed(true)},an.hidden?'off':''));
-  /* 点这一行：选中它（右下角出它的设置），镜头过去 —— 动态视角开着是回到做它时的视角，关着是角度不变、先全览再
+  /* 点这一行：选中它（电脑上右下角出它的设置），镜头过去 —— 动态视角开着是回到做它时的视角，关着是角度不变、先全览再
      拉近。再点一下：不选了。按着 Ctrl 点：多选 */
   const go=ev=>{if(!RO&&ev&&guideKey(ev)){pickMore(i);return}
     if(i===sel){select(-1);return}select(i,true)};
@@ -3647,22 +3647,6 @@ function renderList(){
   }
   host.scrollTop=st;bd.scrollTop=sb;renderEd();
 }
-/* 手机上选中的那一条（五种东西都一样）：底下的清单换成它的一张小卡片 —— 标题、是什么在哪多大、说明、文件、
-   上一条 / 下一条、编辑。右上角的 × 回到清单（清单滚到哪了还在哪）；「编辑」把它换成设置（edOpen），设置右上角的
-   × 再换回来 */
-function cap(){
-  const c=document.getElementById('cap');
-  const show=sel>=0&&!!A[sel]&&!tool&&NARROW.matches&&!edOpen&&!SEL.size;
-  c.hidden=!show;document.body.classList.toggle('has-cap',show);
-  if(!show) return;
-  const an=A[sel], N=listOrder();
-  document.getElementById('capN').style.background=effColor(an);
-  document.getElementById('capT').textContent=an.title;
-  document.getElementById('capS').textContent=[isNote(an)?'':tname(an),where(an),sub(an)].filter(Boolean).join(' · ');
-  putText(document.getElementById('capX'),an.text);
-  fillMedia(sel,document.getElementById('capM'),false);
-  document.getElementById('capI').textContent=(N.indexOf(sel)+1)+' / '+N.length;
-}
 
 /* ---------- 保存 / 导出 / 导入 ---------- */
 let saveT=0;
@@ -3675,7 +3659,7 @@ function state(){
   const ro=LOCK?'这一份是只读的：只能看，不能改。':RO?'现在是只读：只能看，不能改。要改，点一下那把锁。':'';
   const t=LOCK?(fromDraft?'上次在这个浏览器里显示 / 隐藏过东西。':'')
     :(dirty&&!lsOK)?'⚠ 浏览器存不下草稿（附件太大，或浏览器不让存），关页面前请点「保存 HTML」。'
-    :fromDraft?'这是上次在这个浏览器里没保存完的标注。'
+    :fromDraft?'这是上次在这个浏览器里没保存完的事项。'
     :dirty?'改动已自动存在这个浏览器里；要发给别人，点「保存 HTML」或者「分享」。':'';
   if(ro)s.appendChild(el('div',null,ro));
   if(t)s.appendChild(document.createTextNode(t));
@@ -3700,7 +3684,7 @@ function resetDraft(){
   try{localStorage.removeItem(LSKEY)}catch(_){}
   if(tool)endTool();
   loadAll(ANN0);fromDraft=false;dirty=false;sel=-1;record();
-  vwClip();renderViews();rebuildMarks();renderList();counts();state();cap();undoBtns();draw(false);
+  vwClip();renderViews();rebuildMarks();renderList();counts();state();undoBtns();draw(false);
 }
 /* 带标注的整页源码：把 SRC 里那块标注数据换成现在的。ro：存成只读的一份（本来就是只读的一份，再存还是只读）。< 写成 <，数据里就不会
    出现能提前结束 script 的字样 */
@@ -3712,7 +3696,7 @@ function htmlWith(ro){
   return SRC.slice(0,m.index)+m[1]+j+m[2]+SRC.slice(m.index+m[0].length);
 }
 function fname(ext,ro){const d=new Date(), p=n=>String(n).padStart(2,'0');
-  return (D.job||'model')+'_标注_'+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'-'+p(d.getHours())+p(d.getMinutes())+(ro?'_只读':'')+'.'+ext}
+  return (D.job||'model')+'_事项_'+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'-'+p(d.getHours())+p(d.getMinutes())+(ro?'_只读':'')+'.'+ext}
 function download(name,text,type){
   const u=URL.createObjectURL(new Blob([text],{type})), a=el('a');
   a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();
@@ -3763,7 +3747,7 @@ function renderShare(){
   if(!LOCK)row('可编辑',false,'对方打开能接着改');
   row('只读',true,'对方打开只能看，不能改');
   B.appendChild(el('div','mini',(LOCK?'这一份是只读的，分享出去的也是只读。':'只读：对方只能看，不能改。')+
-    (web?'链接：对方看到的是网上那一份。文件：带着这台设备上现在的标注。':'')));
+    (web?'链接：对方看到的是网上那一份。文件：带着这台设备上现在的事项。':'')));
 }
 /* 清单的文字版：和清单一个顺序 —— 没分组的、一个个群组、已处理。一条一行：标题【是什么】在哪；多大；说明；文件 */
 function listText(){
@@ -3772,7 +3756,7 @@ function listText(){
      an.media.length?'文件：'+an.media.map(m=>m.n||'未命名').join('、'):''].filter(Boolean).join('；')+
     (an.done?'（已完成）':'');
   const open=A.filter(a=>!a.done), dn=A.filter(a=>a.done);
-  let s=(D.job?D.job+' ':'')+'框架模型标注（共 '+A.length+' 条）';
+  let s=(D.job?D.job+' ':'')+'框架模型事项（共 '+A.length+' 条）';
   open.filter(a=>!grpOf(a)).forEach(a=>{s+='\n'+line(a)});
   G.forEach(g=>{const m=open.filter(a=>a.grp===g.id); if(!m.length) return;
     s+='\n【'+g.name+'】';m.forEach(a=>{s+='\n'+line(a)})});
@@ -3784,7 +3768,7 @@ function importText(s){
   let o=null;
   try{const m=/<script[^>]*id="ann0"[^>]*>([\s\S]*?)<\/script>/.exec(s);o=JSON.parse(m?m[1]:s)}catch(_){}
   const items=Array.isArray(o)?o:(o&&o.items);
-  if(!Array.isArray(items)){toast('这个文件里没有找到标注');return}
+  if(!Array.isArray(items)){toast('这个文件里没有找到事项');return}
   const have=new Set(A.map(a=>a.id)), used=new Set(A.map(a=>a.title));let n=0, ng=0, nv=0;
   /* 文件里的群组、视角一起带进来（已经有的不重复加） */
   const hg=new Set(G.map(g=>g.id)), hv=new Set(VW.map(v=>v.id));
@@ -3796,9 +3780,9 @@ function importText(s){
   nameAll();
   if(n||ng||nv){changed(true);if(nv)renderViews()}
   const other=o&&o.job&&D.job&&o.job!==D.job;
-  toast(n||ng||nv?'导入了 '+n+' 条标注'+(ng?'、'+ng+' 个群组':'')+(nv?'、'+nv+' 个视角':'')+
-          (other?'。注意：这份标注是 '+o.job+' 的，和当前模型不是同一个工程，位置可能对不上':'')
-         :'没有新的标注（文件里的都已经在了）');
+  toast(n||ng||nv?'导入了 '+n+' 条事项'+(ng?'、'+ng+' 个群组':'')+(nv?'、'+nv+' 个视角':'')+
+          (other?'。注意：这份事项是 '+o.job+' 的，和当前模型不是同一个工程，位置可能对不上':'')
+         :'没有新的事项（文件里的都已经在了）');
 }
 
 document.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>startTool(b.dataset.tool));
@@ -3813,7 +3797,7 @@ document.getElementById('bUndo').onclick=undo;
 document.getElementById('bRedo').onclick=redo;
 document.getElementById('bSave').onclick=()=>{
   download(fname('html',LOCK),htmlWith(),'text/html');dirty=false;fromDraft=false;state();
-  toast('已另存一份带标注的 HTML，在浏览器的「下载」里')};
+  toast('已另存一份带事项的 HTML，在浏览器的「下载」里')};
 document.getElementById('bShare').onclick=()=>{shareOpen=!shareOpen;renderShare();
   /* 手机上这一排按钮在清单下面，展开的两行可能还在面板外头：滚出来 */
   const B=document.getElementById('shareBox');if(shareOpen&&B.scrollIntoView)B.scrollIntoView({block:'nearest'})};
@@ -3822,11 +3806,8 @@ document.getElementById('bImp').onclick=()=>{const f=document.getElementById('fI
 document.getElementById('fImp').onchange=e=>{const f=e.target.files[0];
   if(f)f.text().then(importText,()=>toast('这个文件读不出来'))};
 document.getElementById('bCopy').onclick=()=>copyText(listText(),()=>toast('清单已复制，可以直接粘贴到微信、邮件里'),
-  ()=>toast('这个浏览器复制不了'+(RO?'':'，请用「导出标注」')));
+  ()=>toast('这个浏览器复制不了'+(RO?'':'，请用「导出事项」')));
 document.getElementById('lb').onclick=e=>{if(!e.target.closest('video,audio'))closeLb()};
-document.getElementById('capP').onclick=()=>step(-1);
-document.getElementById('capNx').onclick=()=>step(1);
-document.getElementById('capE').onclick=()=>{edOpen=true;renderEd();cap()};
 document.getElementById('togV').onclick=dynToggle;dynBtn();
 document.getElementById('togR').onclick=roToggle;roBtn();
 /* 多选着、在「一起改」里打过字，焦点离开了设置（点到别处、按了回车）：改完了，勾都去掉。
@@ -3834,8 +3815,7 @@ document.getElementById('togR').onclick=roToggle;roBtn();
 {const P=document.getElementById('ed');
  P.addEventListener('focusout',e=>{if(!edBusy&&selTouched&&SEL.size&&!P.contains(e.relatedTarget))softClear()});
  P.addEventListener('mousedown',e=>{if(!e.target.closest('input,textarea,select,button,label,a,.th,.chip'))e.preventDefault()})}
-document.getElementById('capC').onclick=()=>select(-1);
-NARROW.addEventListener('change',()=>{cap();renderEd()});
+NARROW.addEventListener('change',()=>renderList());     // 清单里那支笔手机上才有：窗口变了重排一次（顺带 renderEd）
 addEventListener('keydown',e=>{
   const k=(e.key||'').toLowerCase(), t=e.target, tag=((t&&t.tagName)||'').toLowerCase();
   /* 撤销 Ctrl+Z，重做 Ctrl+Shift+Z（也认 Ctrl+Y；Mac 上是 ⌘）。说明框里也归这里管 ——
@@ -3873,9 +3853,8 @@ addEventListener('beforeunload',e=>{if(dirty&&!lsOK&&!LOCK){e.preventDefault();e
 })();
 
 rebuild(); resize();
-/* 手机上清单占着底下三分之一：开页面时把模型放在它上面那一块的中间（屏幕中心往上六分之一屏），别一打开就被清单压着 */
-if(NARROW.matches){const H=Math.max(1,cv.clientHeight), u=2*dist*Math.tan(0.36)/H, y=camBasis().y;
-  pan=[0,1,2].map(k=>-y[k]*(H/6)*u);draw(false)}
+/* 手机上清单占着底下三分之一：开页面时把模型放在它上面那一块的中间，别一打开就被清单压着 */
+if(NARROW.matches){const t=aimAt(center,dist);pan=[0,1,2].map(k=>t[k]-center[k]);draw(false)}
 /* 屏幕缩放比变了不一定有 resize 事件（窗口拖到另一块屏幕）：自己盯着，变了就重排画布 */
 (function watch(){
   try{matchMedia('(resolution:'+(devicePixelRatio||1)+'dppx)')
