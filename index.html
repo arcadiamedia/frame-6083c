@@ -81,12 +81,20 @@ td:first-child{color:var(--dim);padding-right:8px;white-space:nowrap}
 /* 清单照待办清单的样子：每一条左边一个方格（多选），右边一个眼睛（隐藏）；能归到群组里，
    群组一行：全选的方格、折叠箭头、颜色、名字、条数、眼睛、改名。已完成的归到最下面那一组 */
 /* 设置：选中的那一条、或者勾着的那几条能改的东西。电脑上固定在模型的右下角（清单那一列的左边），手机上在最底下。
-   用户（2026-11-15 深夜）：「单击右侧清单不再展开选项，在模型右下角这个区域弹出设置，多选也是在这里弹出设置」 */
-#ed{right:316px;bottom:12px;z-index:4;width:400px;max-width:calc(100vw - 340px);max-height:calc(100vh - 70px);
+   用户（2026-11-15 深夜）：「单击右侧清单不再展开选项，在模型右下角这个区域弹出设置，多选也是在这里弹出设置」；
+   看了以后：「我希望右下角这个菜单能够窄一些，现在占用太多空间了」—— 宽从 400 收到 288（和清单那一列差不多宽），
+   里面的东西跟着排紧：色点小一号、群组和它的名字排一行、行距收一点 */
+#ed{right:316px;bottom:12px;z-index:4;width:288px;max-width:calc(100vw - 340px);max-height:calc(100vh - 70px);
   max-height:calc(100dvh - 70px);overflow:auto;padding:8px 10px 10px}
 #ed[hidden]{display:none}
 #ed .anE{padding:0;border-top:0}
-#ed .row{margin-top:8px}
+#ed .row{margin-top:6px}
+#ed .row button{min-width:0;padding:5px 2px}
+#ed .fld{margin-top:6px}
+#ed .fld.gi{flex-direction:row;align-items:center;gap:8px}
+#ed .fld.gi select{flex:1;width:auto;min-width:0}
+#ed .cols{gap:6px;margin-top:8px}
+#ed .cdot{width:18px;height:18px}
 #ed .fg{grid-template-columns:repeat(3,1fr)}
 #ed .fg .lab{grid-column:span 2}
 #ed textarea{min-height:40px}
@@ -260,6 +268,9 @@ body.side-open #tog .i-x{display:inline}
   #annFold{display:none}
   #cap{left:12px;right:12px;bottom:12px;z-index:1;padding:10px 12px;max-height:46vh;overflow:auto}
   #ed{left:12px;right:12px;bottom:12px;width:auto;max-width:none;max-height:56vh;z-index:5;padding:10px 12px}
+  #ed .cols{gap:9px}
+  #ed .cdot{width:26px;height:26px}
+  #ed .row button{padding:5px 6px}
   .anH{padding:7px 4px 7px 8px}
   body.has-cap #hud{display:none}
   textarea,.anE input[type=number],.lk input{font-size:16px}
@@ -2100,10 +2111,14 @@ function annSize(an){
   if(an.box){const b=an.box;return Math.hypot(b[3]-b[0],b[4]-b[1],b[5]-b[2])}
   const p=an.type==='hl'?pieceOf(an):null;return p?Math.max(p.dx,p.dy,p.dz):0}
 /* 动态视角关着时点清单里的一条：角度不动 —— 先照现在的角度退到全览，再把它拉近到屏幕中间。
-   已经是全览了就直接拉近。拉多近看它多大：它占画面高的三成上下，最近到 900 */
+   已经是全览了就直接拉近。
+   拉多近：头一版是让它占画面高的三成（小东西近到 900），用户看了：「镜头拉得太近，反而不知道它在整个模型的什么
+   位置…不要拉得这么近，稍微远一些」—— 现在最近只到全览的三成远（NEARK；画面里还看得到它周围一大片），它本身大的
+   再远些。嫌近嫌远改 NEARK */
+const NEARK=.3;
 function zoomOn(an){
   const w=anchorW(an); if(!w) return;
-  const fit=fitDist(), size=annSize(an), d=Math.max(900,Math.min(fit,size*2.2+700)),
+  const fit=fitDist(), size=annSize(an), d=Math.min(fit,Math.max(size*3+1500,fit*NEARK)),
         there=Math.abs(Math.log(dist/fit))<.03&&Math.hypot(pan[0],pan[1],pan[2])<radius*.02,
         W=cv.clientWidth, H=Math.max(1,cv.clientHeight), u=2*d*Math.tan(0.36)/H, half=size/2/u,      // 拉近以后一个像素多少毫米；它在屏幕上的半长
         P=document.getElementById('ed'), r=P&&!P.hidden&&P.getBoundingClientRect?P.getBoundingClientRect():null;
@@ -3224,7 +3239,7 @@ function editFor(L,batch){
       /* 尺寸线放在哪是做的时候手动放的；这里能改拉出的距离、换到另一侧，或者重新放一次
          （前几版留下来没放过的，重新放一次就归用户管了） */
       const fg=grid(), l2=el('div','lab'), two=el('div','two'), fb=el('button',null,'换一侧');
-      if(Dg.some(a=>a.ov))numF(fg,'尺寸线拉出（mm）','dOff','50');
+      if(Dg.some(a=>a.ov))numF(fg,'拉出（mm）','dOff','50');
       l2.appendChild(el('span',null,!batch&&!an.ov?'尺寸线（老版本自动摆的）':'尺寸线'));
       if(!batch){const rb=el('button',null,'重新放置');rb.type='button';
         rb.onclick=()=>startTool(an.chain?'dimc':'dim1',an,true);two.appendChild(rb)}
@@ -3245,7 +3260,7 @@ function editFor(L,batch){
   ub.title='照片、PDF、视频、图纸……什么文件都行；照片会缩小了再存'+(batch?'。勾着的每一条都加上':'');
   ub.onclick=()=>pickFiles(L,'',batch?fin:null);if(fr)fr.appendChild(ub);
   e.appendChild(annColors(L,!batch,batch?fin:null));
-  if(!batch&&G.length){const gl=el('label','fld','群组'), sl=el('select');sl.setAttribute('aria-label','群组');
+  if(!batch&&G.length){const gl=el('label','fld gi','群组'), sl=el('select');sl.setAttribute('aria-label','群组');
     [['','不分组']].concat(G.map(g=>[g.id,g.name])).forEach(o=>{const op=el('option',null,o[1]);op.value=o[0];sl.appendChild(op)});
     sl.value=grpOf(an)?an.grp:'';sl.onchange=()=>{an.grp=sl.value;changed(true)};
     gl.appendChild(sl);e.appendChild(gl)}
@@ -3351,7 +3366,7 @@ function renderEd(){
       act(L.every(a=>a.hidden)?'显示':'隐藏','hide');
       act('删除','del','del');
       sl.setAttribute('aria-label','移到群组');
-      [['','移到群组…'],['-','不分组']].concat(G.map(g=>[g.id,g.name])).concat([['+','＋ 新建群组']])
+      [['','移到…'],['-','不分组']].concat(G.map(g=>[g.id,g.name])).concat([['+','＋ 新建群组']])
         .forEach(o=>{const op=el('option',null,o[1]);op.value=o[0];sl.appendChild(op)});
       sl.onchange=()=>{const v=sl.value; if(v) selDo('move',v==='-'?'':v)};
       r.appendChild(sl);P.appendChild(r);
