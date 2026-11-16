@@ -1319,6 +1319,12 @@ const UNT=/^无标题[零一二三四五六七八九十百千0-9]+$/;
 function untitled(an){return !an.title||UNT.test(an.title)}                // 还是默认的名字：模型上不画标题
 function newTitle(){return freeName('无标题',A.map(a=>a.title))}
 function nameAll(){A.forEach(a=>{if(!a.title)a.title=newTitle()})}          // 读进来没有标题的（老数据）：按先后补上
+/* 进不进清单：起了名字的才进。用户（2026-11-16，第二十五版）：「无标题的事项不在事项清单里显示」。
+   还叫「无标题 N」的照样画在模型上、照样点得着：点它就是选中它，右下角出它的设置（手机上直接出 —— 清单里没有它那一行，
+   没处点笔）。名字一打上（打字的那一刻）就进清单；名字删光了、又叫回「无标题 N」，就出清单。
+   清单上的条数、组头的条数和方格全选、Shift 连选、「复制清单」的文字，都只算清单里的；模型上按着 Ctrl 点照样能把
+   没起名字的勾进多选，「已选 N 条」算上它们。 */
+function inList(an){return !untitled(an)}
 function grpOf(an){return an.grp?(G.find(g=>g.id===an.grp)||null):null}
 function effColor(an){if(an.done) return DONEC;const g=grpOf(an);return g&&g.color?g.color:an.color}
 function effHidden(an){if(an.hidden) return true;if(an.done) return doneHidden;const g=grpOf(an);return !!(g&&g.hidden)}
@@ -3154,6 +3160,7 @@ function addAnn(o){
 function select(i,fly){
   if(i!==sel)edOpen=false;
   sel=i;if(i>=0){SEL.clear();if(A[i])anchor=A[i].id}
+  if(i>=0&&A[i]&&!RO&&!inList(A[i]))edOpen=true;      // 清单里没有它（没起名字）：手机上没处点笔，设置直接出
   if(i>=0&&A[i]){const an=A[i], g=grpOf(an); if(an.done)doneFold=false; else if(g)g.fold=false}
   renderList();
   if(i>=0){
@@ -3237,11 +3244,11 @@ function changed(structural,key){
   record(key);
   dirty=true;rebuildMarks();
   if(structural!==false) renderList();
-  else{fillRows();syncF()}
+  else{fillRows();if(listStale())drawList();syncF()}
   counts();autosave();state();undoBtns();draw(false);
 }
-function counts(){                       // 清单里一共几条、还有几条没完成
-  const n=A.length, o=A.filter(a=>!a.done).length;
+function counts(){                       // 清单里一共几条、还有几条没完成（没起名字的不算，见 inList）
+  const L=A.filter(inList), n=L.length, o=L.filter(a=>!a.done).length;
   document.getElementById('annN').textContent=(n?(o===n?n+' 条':n+' 条，'+o+' 条没完成'):'')+(RO?(n?' · ':'')+'只读':'');
   infoBtn();
 }
@@ -3534,7 +3541,7 @@ function selChanged(){if(SEL.size){sel=-1;edOpen=false}renderList();draw(false)}
 function selAll(ids,on){ids.forEach(id=>{if(on)SEL.add(id);else SEL.delete(id)});selChanged()}
 /* 清单上看得见的那些，从上到下（和 renderList 排的一样：没分组的、一个个群组、已完成；折起来的组里的不算） */
 function listShown(){
-  const idx=A.map((_,i)=>i), open=idx.filter(i=>!A[i].done);
+  const idx=A.map((_,i)=>i).filter(i=>inList(A[i])), open=idx.filter(i=>!A[i].done);
   return open.filter(i=>!grpOf(A[i])).concat(...G.filter(g=>!g.fold).map(g=>open.filter(i=>A[i].grp===g.id)),
     doneFold?[]:idx.filter(i=>A[i].done))}
 /* 按着 Shift 点清单里的一行、或者它的方格：从上一回点的那一条（anchor）到这一条，中间的都勾上（on 为假：都去掉 ——
@@ -3740,12 +3747,20 @@ function addGroup(){
   if(RO) return;
   const g=newGroup();gEdit=g.id;gFocus=true;openAnn();changed(true);
 }
-function renderList(){
+function renderList(){drawList();renderEd()}
+/* 清单上该有的那几行和现在画着的对不上（起了名字、名字删光了） */
+function listStale(){
+  return Array.from(document.querySelectorAll('#annList .an')).map(b=>b.dataset.i).join(',')!==listShown().join(',')}
+function drawList(){
   /* 滚到哪了记着：电脑上滚的是清单自己，手机上滚的是面板的整个身子（#annBody） */
   const host=document.getElementById('annList'), bd=document.getElementById('annBody'), st=host.scrollTop, sb=bd.scrollTop;
   host.textContent='';
-  if(!A.length&&!G.length)host.appendChild(el('div','mini',RO?'还没有东西。':'还没有东西。点上面的按钮，再到模型上点位置。'));
-  const idx=A.map((_,i)=>i), open=idx.filter(i=>!A[i].done), dn=idx.filter(i=>A[i].done),
+  /* 只进起了名字的（inList）；一条都没有、又有没起名字的：说一声它们在哪 */
+  const idx=A.map((_,i)=>i).filter(i=>inList(A[i]));
+  if(!idx.length&&!G.length)host.appendChild(el('div','mini',
+    A.length?(RO?'清单里只列起了名字的事项。':'清单里只列起了名字的事项。没起名字的在模型上点它，起个名字就进来了。')
+    :RO?'还没有东西。':'还没有东西。点上面的按钮，再到模型上点位置。'));
+  const open=idx.filter(i=>!A[i].done), dn=idx.filter(i=>A[i].done),
         zone=()=>{const z=el('div','gz');host.appendChild(z);return z};
   /* 没分组的排在最前面，也有一行头：方格全选这一段；有群组的时候卡片能拖回这儿来 */
   const free=open.filter(i=>!grpOf(A[i]));
@@ -3775,7 +3790,7 @@ function renderList(){
     host.appendChild(h);
     if(!doneFold){const z=zone();dn.forEach(i=>card(i,z))}
   }
-  host.scrollTop=st;bd.scrollTop=sb;renderEd();
+  host.scrollTop=st;bd.scrollTop=sb;
 }
 
 /* ---------- 保存 / 导出 / 导入 ---------- */
@@ -3884,14 +3899,14 @@ function renderShare(){
     '对方打开就是你现在看着的画面（视角、显示 / 隐藏）。'+
     (web?'链接：对方看到的是网上那一份。文件：带着这台设备上现在的事项。':'')));
 }
-/* 清单的文字版：和清单一个顺序 —— 没分组的、一个个群组、已处理。一条一行：标题【是什么】在哪；多大；说明；文件 */
+/* 清单的文字版：和清单一样只有起了名字的，一个顺序 —— 没分组的、一个个群组、已处理。一条一行：标题【是什么】在哪；多大；说明；文件 */
 function listText(){
   const line=an=>'· '+an.title+'【'+tname(an)+'】'+
     [where(an),sub(an),an.text.replace(/\s*\n\s*/g,' ').trim(),
      an.media.length?'文件：'+an.media.map(m=>m.n||'未命名').join('、'):''].filter(Boolean).join('；')+
     (an.done?'（已完成）':'');
-  const open=A.filter(a=>!a.done), dn=A.filter(a=>a.done);
-  let s=(D.job?D.job+' ':'')+'框架模型事项（共 '+A.length+' 条）';
+  const L=A.filter(inList), open=L.filter(a=>!a.done), dn=L.filter(a=>a.done);
+  let s=(D.job?D.job+' ':'')+'框架模型事项（共 '+L.length+' 条）';
   open.filter(a=>!grpOf(a)).forEach(a=>{s+='\n'+line(a)});
   G.forEach(g=>{const m=open.filter(a=>a.grp===g.id); if(!m.length) return;
     s+='\n【'+g.name+'】';m.forEach(a=>{s+='\n'+line(a)})});
