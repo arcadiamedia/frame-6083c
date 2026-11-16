@@ -768,6 +768,19 @@ cv.addEventListener('pointermove',e=>{
   panBy((k-1)*(b.x-r.left-r.width/2), (k-1)*(b.y-r.top-r.height/2), u);
   dist=nd; redraw();
 });
+/* 手指轻点画布：pointerup 那一刻就把事办了（开大图、出构件信息……），可浏览器随后还要在同一个位置补一下 click（触屏
+   轻点都有这一下）。刚办的事要是正好在那个位置盖上来一样能点的东西，这一下就落在它身上 —— 大图是「点一下就关」，
+   于是刚开就关；构件信息框的 × 在右上角，点那儿的木料也一样。用户（2026-11-16，第二十四版）：「在手机端查看图片
+   标注有点问题：点一下不显示，图片好像一闪而过，一定要长按才能显示」（长按不补 click，所以留得住）。
+   tapEcho：刚在画布上点的那一下的位置和时刻。紧跟着（半秒之内）落在那儿附近的头一下 click 吞掉 —— 只吞一下；
+   发给画布自己的（没有东西盖上来）、落在别处的、来晚了的，都不吞。鼠标点也记：有的浏览器把那一下发给盖上来的东西 */
+let tapEcho=null;
+addEventListener('click',e=>{
+  const g=tapEcho; if(!g) return;
+  tapEcho=null;
+  if(e.target===cv||performance.now()-g.t>500||Math.hypot(e.clientX-g.x,e.clientY-g.y)>30) return;
+  e.stopPropagation();e.preventDefault();
+},true);
 function lift(e,cancel){
   if(!ptrs.delete(e.pointerId)) return;
   if(ptrs.size) return;             // 还有手指在屏上，手势没完
@@ -776,6 +789,7 @@ function lift(e,cancel){
   if(g&&g.orb) redraw();            // 转完了：中心那个小圈收掉
   if(!cancel&&g&&!g.multi&&g.moved<(g.mouse?4:10)){
     if(g.mouse){setShift(e.shiftKey);setCtrl(guideKey(e))}   // Shift+点 = 锁定方向（Shift+拖 才是平移）；Ctrl+点 = 引导点
+    tapEcho={x:e.clientX,y:e.clientY,t:performance.now()};
     tapAt(e.clientX,e.clientY,!g.mouse,g.mouse&&guideKey(e))}
 }
 cv.addEventListener('pointerup',e=>lift(e,false));
@@ -3286,6 +3300,7 @@ function fillMedia(i,host,edit){
     host.appendChild(e);
   });
 }
+let lbAt=0;                            // 大图是什么时候开的
 function closeLb(){document.getElementById('lb').hidden=true;document.getElementById('lbC').textContent=''}
 function openMedia(m){
   if(m.k==='link'){window.open(m.u,'_blank','noopener');return}
@@ -3294,6 +3309,7 @@ function openMedia(m){
   const e=document.createElement(m.k==='img'?'img':m.k==='vid'?'video':'audio');
   e.src=m.d;if(m.k==='img')e.alt=m.n||'照片';else{e.controls=true;e.autoplay=true}
   c.appendChild(e);document.getElementById('lbT').textContent=m.n||'';document.getElementById('lb').hidden=false;
+  lbAt=performance.now();
 }
 /* 照片缩到最长边 1600 再存进文件，不然几张照片就把 HTML 撑到几十兆 */
 function shrink(f){
@@ -3926,7 +3942,10 @@ document.getElementById('fImp').onchange=e=>{const f=e.target.files[0];
   if(f)f.text().then(importText,()=>toast('这个文件读不出来'))};
 document.getElementById('bCopy').onclick=()=>copyText(listText(),()=>toast('清单已复制，可以直接粘贴到微信、邮件里'),
   ()=>toast('这个浏览器复制不了'+(RO?'':'，请用「导出事项」')));
-document.getElementById('lb').onclick=e=>{if(!e.target.closest('video,audio'))closeLb()};
+/* 大图：点一下就关。刚开（0.3 秒之内）就又来一下的不算 —— 手快连着点了两下，是想开，不是开了又关 */
+document.getElementById('lb').onclick=e=>{
+  if(performance.now()-lbAt<300) return;
+  if(!e.target.closest('video,audio'))closeLb()};
 document.getElementById('togV').onclick=dynToggle;dynBtn();
 document.getElementById('togR').onclick=roToggle;roBtn();
 /* 点设置里的空白处：别把正在打字的那个框的焦点带走 */
