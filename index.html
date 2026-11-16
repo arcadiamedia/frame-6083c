@@ -135,6 +135,12 @@ button.ib.off{color:var(--bad)}
 .ge{margin:-2px 0 8px;padding:8px;border:1px solid var(--line);border-radius:8px;background:#201d17}
 .ge .cols{margin-top:8px}
 .gz{min-height:6px;border-radius:6px}
+/* 群组（和「已完成」）下面的事项往里缩一格：方格对着组头上的折叠箭头；没分组的不缩。
+   用户（2026-11-16，第二十六版）：「群组下面的事项前面加缩进」 */
+.gz.in>.an{margin-left:20px}
+/* 拖着群组排序：落在哪一组前面 —— 它的组头上面一条金线；后面 —— 这一组最底下一条金线（都是整宽，和事项那条缩进的分得开） */
+.gh.dropA{box-shadow:0 -2px 0 0 var(--acc)}
+.gh.dropB,.ge.dropB,.gz.dropB{box-shadow:0 2px 0 0 var(--acc)}
 .fld{display:flex;flex-direction:column;align-items:stretch;gap:2px;margin-top:8px;font-size:11px;color:var(--dim);cursor:default;padding:0}
 .fld input[type=text],.fld select,.ge input[type=text],.vw input[type=text]{width:100%;background:#15130f;color:var(--fg);
   border:1px solid var(--line);border-radius:6px;padding:5px 8px;font:inherit;font-size:12px}
@@ -3512,7 +3518,8 @@ function delOne(an){const i=A.indexOf(an);if(i<0) return;A.splice(i,1);sel=-1;ch
    不管原来在哪一组；取消完成就回原来的组）。
    一条一行：左边一个方格（多选）、一个色点、标题、是什么、右边一只眼睛（隐藏）；
    点它 = 选中它（右下角出它的设置）、镜头转过去，再点一下不选了；按着 Ctrl 点 = 多选，按着 Shift 点 = 连选。
-   能拖：拖到另一行上排序，拖到组头上换组（手机上换组在设置的「群组」里选，排序到电脑上做）。
+   能拖：拖到另一行上排序，拖到组头上换组；组头也能拖，给群组排先后（手机上换组在设置的「群组」里选，排序到电脑上做）。
+   群组和「已完成」下面的事项往里缩一格。
    组头：折叠箭头、颜色、名字、条数、眼睛、铅笔（改名、换颜色、删除群组）。
    折叠只是清单的样子：存下来，不算一步撤销。 */
 let gEdit='', gFocus=false;            // 正开着编辑区的那个群组；刚新建的，名字框要拿到焦点
@@ -3661,11 +3668,33 @@ function moveRows(L,tg,after){
   A=rest.slice(0,k).concat(L,rest.slice(k));
   sel=selId?A.findIndex(a=>a.id===selId):-1;
   changed(true);return true}
-/* 清单里的行拖到组头上：换到这一组（fn(L)：对拖过来的这几条做什么） */
+/* ---------- 群组拖着排序 ----------
+   用户（2026-11-16，第二十六版）：「群组也要能拖动排序」。拖组头：落在另一组的上半截 = 排到它前面，下半截 = 排到它后面
+   （「这一组」= 组头 + 改名那一块 + 下面那些事项，按整块的上下半截算；落在它下面的事项上也算）。没分组的那一段永远在最
+   前面、「已完成」永远在最后，拖到那儿不算。一次 = 一步撤销。只读时拖不了；手机上没有（触屏上网页里的拖放靠不住）。
+   拖群组时事件冒到清单（#annList）上统一处理；事项那一行、组头上「拖事项进组」的处理见了 dragG 就让开。 */
+let dragG='';
+/* 这一组在清单上的那几块（组头、改名那一块、下面的事项那一段），从上到下 */
+function gBlock(id){return Array.from(document.querySelectorAll('#annList [data-g="'+id+'"]'))}
+/* 拖着群组指到 ev 那儿：落在哪一组的前面 / 后面（null = 这儿不能放） */
+function gAim(ev){
+  const t=ev.target&&ev.target.closest?ev.target.closest('#annList [data-g]'):null; if(!t) return null;
+  const g=G.find(x=>x.id===t.dataset.g); if(!g||g.id===dragG) return null;
+  const els=gBlock(g.id); if(!els.length) return null;
+  const top=els[0].getBoundingClientRect().top, bot=Math.max.apply(null,els.map(e=>e.getBoundingClientRect().bottom));
+  return {g,after:ev.clientY>(top+bot)/2,els}}
+function gMark(a){dropMark(null);if(a)a.els[a.after?a.els.length-1:0].classList.add(a.after?'dropB':'dropA')}
+/* 把群组 id 挪到 tg 的前面（after 为真：后面）。先后没变就不算一步 */
+function moveGroup(id,tg,after){
+  const g=G.find(x=>x.id===id); if(RO||!g||!tg||g===tg||!G.includes(tg)) return false;
+  const rest=G.filter(x=>x!==g), k=rest.indexOf(tg)+(after?1:0), N=rest.slice(0,k).concat([g],rest.slice(k));
+  if(N.every((x,i)=>x===G[i])) return false;
+  G=N;changed(true);return true}
+/* 清单里的行拖到组头上：换到这一组（fn(L)：对拖过来的这几条做什么）。拖的是群组：让开（见上） */
 function dropOn(e,fn){
-  e.ondragover=ev=>{ev.preventDefault();e.classList.add('drop')};
+  e.ondragover=ev=>{if(dragG) return;ev.preventDefault();e.classList.add('drop')};
   e.ondragleave=()=>e.classList.remove('drop');
-  e.ondrop=ev=>{ev.preventDefault();e.classList.remove('drop');let id=dragId;
+  e.ondrop=ev=>{if(dragG) return;ev.preventDefault();e.classList.remove('drop');let id=dragId;
     if(!id)try{id=ev.dataTransfer.getData('text/plain')}catch(_){}
     dragId='';dropMark(null);const L=dragList(id);if(L.length)fn(L)}}
 function card(i,host){
@@ -3720,11 +3749,15 @@ function groupHead(g,mine){
   h.appendChild(ibtn(g.hidden?'eyeOff':'eye',g.hidden?'这一组藏着：点一下显示':'隐藏这一组（模型上不画）',
     ()=>{g.hidden=!g.hidden;changed(true)},g.hidden?'off':''));
   if(!RO){h.appendChild(ibtn('pen','改名、换颜色、删除群组',()=>{gEdit=gEdit===g.id?'':g.id;gFocus=!!gEdit;renderList()}));
-    dropOn(h,L=>{L.forEach(a=>{a.grp=g.id;a.done=false});changed(true)})}
+    dropOn(h,L=>{L.forEach(a=>{a.grp=g.id;a.done=false});changed(true)});
+    h.draggable=true;
+    h.ondragstart=ev=>{dragG=g.id;dragId='';try{ev.dataTransfer.setData('text/plain','g:'+g.id);ev.dataTransfer.effectAllowed='move'}catch(_){}};
+    h.ondragend=()=>{dragG='';dropMark(null)}}
   return h;
 }
 function groupEditor(g){
   const e=el('div','ge'), inp=el('input');
+  e.dataset.g=g.id;                        // 算在这一组的那一块里（拖群组时看落在哪一组）
   inp.type='text';inp.maxLength=40;inp.value=g.name;inp.setAttribute('aria-label','群组的名字');
   inp.oninput=()=>{const s=inp.value.replace(/\s+/g,' ').trim();if(!s) return;
     g.name=s.slice(0,40);changed(false,'gname:'+g.id);
@@ -3761,7 +3794,7 @@ function drawList(){
     A.length?(RO?'清单里只列起了名字的事项。':'清单里只列起了名字的事项。没起名字的在模型上点它，起个名字就进来了。')
     :RO?'还没有东西。':'还没有东西。点上面的按钮，再到模型上点位置。'));
   const open=idx.filter(i=>!A[i].done), dn=idx.filter(i=>A[i].done),
-        zone=()=>{const z=el('div','gz');host.appendChild(z);return z};
+        zone=(gid,ind)=>{const z=el('div','gz'+(ind?' in':''));if(gid)z.dataset.g=gid;host.appendChild(z);return z};
   /* 没分组的排在最前面，也有一行头：方格全选这一段；有群组的时候卡片能拖回这儿来 */
   const free=open.filter(i=>!grpOf(A[i]));
   /* 只读时这一行只是个小标题：有群组、又有没分组的才要它 */
@@ -3774,7 +3807,7 @@ function drawList(){
     const mine=open.filter(i=>A[i].grp===g.id);
     host.appendChild(groupHead(g,mine));
     if(!RO&&gEdit===g.id)host.appendChild(groupEditor(g));
-    if(!g.fold){const z=zone();mine.forEach(i=>card(i,z))}
+    if(!g.fold){const z=zone(g.id,true);mine.forEach(i=>card(i,z))}
   });
   /* 已完成：最下面那一组。模型上统一是很淡的浅灰；它也能整组藏起来 */
   if(dn.length){
@@ -3788,7 +3821,7 @@ function drawList(){
       ()=>{doneHidden=!doneHidden;changed(true)},doneHidden?'off':''));
     if(!RO)dropOn(h,L=>{L.forEach(a=>{a.done=true});changed(true)});
     host.appendChild(h);
-    if(!doneFold){const z=zone();dn.forEach(i=>card(i,z))}
+    if(!doneFold){const z=zone('',true);dn.forEach(i=>card(i,z))}
   }
   host.scrollTop=st;bd.scrollTop=sb;
 }
@@ -3943,6 +3976,11 @@ document.getElementById('annHead').onkeydown=e=>{
   if(e.target===e.currentTarget&&(e.key==='Enter'||e.key===' ')){e.preventDefault();e.currentTarget.click()}};
 document.getElementById('togI').onclick=infoAll;
 document.getElementById('bGrp').onclick=addGroup;
+{const host=document.getElementById('annList');
+ host.addEventListener('dragover',ev=>{if(!dragG) return;const a=gAim(ev);gMark(a);if(a)ev.preventDefault()});
+ host.addEventListener('dragleave',ev=>{if(dragG&&!host.contains(ev.relatedTarget))dropMark(null)});
+ host.addEventListener('drop',ev=>{if(!dragG) return;ev.preventDefault();const a=gAim(ev), id=dragG;dragG='';dropMark(null);
+   if(a)moveGroup(id,a.g,a.after)})}
 document.getElementById('bUndo').onclick=undo;
 document.getElementById('bRedo').onclick=redo;
 document.getElementById('bSave').onclick=()=>{
