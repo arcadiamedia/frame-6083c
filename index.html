@@ -66,7 +66,8 @@ td:first-child{color:var(--dim);padding-right:8px;white-space:nowrap}
 #ann.fold #annFold{transform:rotate(-90deg)}
 #ann.fold #annBody{display:none}
 #annBody{display:flex;flex-direction:column;min-height:0;margin-top:4px}
-#annList{overflow:auto;min-height:0;margin-top:10px}
+#annList{overflow:auto;min-height:0;margin-top:10px;-webkit-user-select:none;user-select:none}      /* 按着 Shift 点是连选，别把字选中了 */
+#annList input[type=text]{-webkit-user-select:text;user-select:text}
 #annState{margin-top:8px;line-height:1.5}
 #annState:empty{display:none}
 /* 清单里一条一行：方格、色点、标题、是什么（槽口 / 尺寸 / 标注……）、眼睛，别的都不写。用户（2026-11-15 深夜）：
@@ -74,6 +75,9 @@ td:first-child{color:var(--dim);padding-right:8px;white-space:nowrap}
    显示更多的清单」。在哪、多大、说明这些，鼠标停在那一行上看得到，选中了在右下角的设置里也有 */
 .an{border:1px solid var(--line);border-radius:6px;margin-bottom:2px;background:#201d17}
 .an.sel{border-color:var(--acc)}
+/* 拖着排序：要落在这一行的前面 / 后面，那一侧画一条金线 */
+.an.dropA{box-shadow:0 -2px 0 0 var(--acc)}
+.an.dropB{box-shadow:0 2px 0 0 var(--acc)}
 .anH{display:flex;gap:7px;padding:3px 4px 3px 8px;cursor:pointer;align-items:center}
 .num{flex:none;width:11px;height:11px;border-radius:50%;box-shadow:0 0 0 1px rgba(255,255,255,.3)}
 .anH .ty{flex:none}
@@ -534,6 +538,22 @@ let idxCount=0, edgeCount=0;
 /* ---------- 过滤与索引 ---------- */
 const showLv=new Set(D.levels.map((_,i)=>i));
 const showKd=new Set(D.kinds.map((_,i)=>i));
+/* 楼层、构件类型勾了哪些：记在这个浏览器里，刷新还在。用户（2026-11-16，第二十三版）：「现在我发现刷新会恢复楼层和
+   构件类型的勾选，不要这样」。按「这一份文件 + 这条链接带的画面」各记各的（VISKEY，见下面）：头一回打开一份分享来的
+   画面，照它的；在它上面自己又勾过，刷新还是自己勾的。记名字不记序号（重新生成模型后照样对得上）。
+   visReady：开页面摆好以前不记（那时候还是默认的全勾着）。镜头、爆炸、剖切不记 —— 他只说了勾选 */
+let visReady=false, visLast='';
+function saveVis(){
+  if(!visReady) return;
+  const t=JSON.stringify({hl:D.levels.filter((_,i)=>!showLv.has(i)),hk:D.kinds.filter((_,i)=>!showKd.has(i))});
+  if(t===visLast) return;
+  visLast=t;try{localStorage.setItem(VISKEY,t)}catch(_){}}
+function loadVis(){
+  let o=null;try{o=JSON.parse(localStorage.getItem(VISKEY)||'null')}catch(_){}
+  if(!o||!Array.isArray(o.hl)||!Array.isArray(o.hk)) return false;
+  showLv.clear();D.levels.forEach((n,i)=>{if(!o.hl.includes(n))showLv.add(i)});
+  showKd.clear();D.kinds.forEach((n,i)=>{if(!o.hk.includes(n))showKd.add(i)});
+  syncFilters();rebuild();draw(false);return true}
 function rebuild(){
   const arr=[], earr=[];
   pieces.forEach(p=>{
@@ -550,6 +570,7 @@ function rebuild(){
     uintOK?new Uint32Array(earr):new Uint16Array(earr),gl.STATIC_DRAW);
   rebuildMarks();
   hud();
+  saveVis();
 }
 
 /* ---------- 相机 ---------- */
@@ -1084,6 +1105,10 @@ let ANN0={};
 try{ANN0=JSON.parse(document.getElementById('ann0').textContent||'{}')||{};}catch(_){ANN0={};}
 if(Array.isArray(ANN0)) ANN0={items:ANN0};
 const LSKEY='fpann:'+(D.job||'')+':'+(ANN0.rev||'0');
+/* 楼层 / 构件类型的勾选记在哪：这一份文件（工程号 + rev），再加上网址里带的那份画面（#s=…）的指纹 */
+function hash32(t){let h=5381;for(let i=0;i<t.length;i++)h=((h<<5)+h+t.charCodeAt(i))|0;return (h>>>0).toString(36)}
+const VISKEY='fpvis:'+(D.job||'')+':'+(ANN0.rev||'0')+':'+
+  (()=>{try{const m=/[#&]s=([A-Za-z0-9_-]+)/.exec(location.hash||'');return m?hash32(m[1]):''}catch(_){return ''}})();
 /* 只读。用户（2026-11-15，第二十版）：「加入一个查看模式，就是不能编辑。但是那些显示图层的操作可以做，比如改颜色、删除这些
    编辑做不了。我想在手机上查看的时候，界面能够尽量简单一些，因为在手机上编辑说实话也是比较费劲。我现在想暂时提供
    一个只读模式过渡。界面上加一个按钮来控制可编辑还是只读。分享的时候有两个选项：一个是可编辑，另一个是不可编辑。」
@@ -1272,6 +1297,7 @@ function placed(an){return an.type==='dim'||typeof an.pn==='string'}       // �
 let G=[], doneHidden=false, doneFold=false;
 /* 勾着的那几条（id）：清单里的方格、模型上按着 Ctrl 点，是同一份。只是这会儿的选择 —— 不存盘、不进撤销 */
 const SEL=new Set();
+let anchor='';                         // 清单里上一回点的是哪一条（按着 Shift 连选从它算起）
 /* 这一条是不是选着：单选着它，或者勾着它 —— 模型上、清单里都按选中的样子画 */
 function isOn(i){return i>=0&&(i===sel||(SEL.size>0&&!!A[i]&&SEL.has(A[i].id)))}
 let VW=[], vwOn='top', topClip=null;          // 三点定出来的视角、现在用着哪个、俯视的剖切标高（见「视角」一节）
@@ -1331,6 +1357,17 @@ function normMedia(m){
   const ty=m.d.slice(5,m.d.indexOf(';'));
   return {k:ty.startsWith('image/')?'img':ty.startsWith('video/')?'vid':ty.startsWith('audio/')?'aud':'file',n,d:m.d};
 }
+/* 一份记下来的画面（getView 那样的）：数对不上就是 null。cv / cd 是那时用着的视角和剖切深度（老数据是 clip：
+   按高度的百分比） */
+function normV(v){
+  if(!(v&&typeof v==='object'&&num(v.yaw)&&num(v.pitch)&&num(v.dist)&&v.dist>0&&v3(v.t))) return null;
+  const r={yaw:v.yaw,pitch:Math.max(-1.5706,Math.min(1.5706,v.pitch)),roll:num(v.roll)?v.roll:0,dist:v.dist,t:v.t.slice(),o:v.o?1:0,
+    exp:num(v.exp)?Math.max(0,Math.min(100,v.exp)):0,
+    a:num(v.a)&&v.a>0?v.a:0,
+    hl:(Array.isArray(v.hl)?v.hl:[]).map(String),hk:(Array.isArray(v.hk)?v.hk:[]).map(String)};
+  if(typeof v.cv==='string'){r.cv=v.cv;r.cd=num(v.cd)?v.cd:null}
+  else r.clip=num(v.clip)?Math.max(0,Math.min(100,v.clip)):100;
+  return r}
 function norm(o){
   if(!o||typeof o!=='object') return null;
   const ty=o.type==='doc'?'note':o.type;                  // 老版本的「文件标注」：现在就是带文件的标注
@@ -1343,16 +1380,8 @@ function norm(o){
     text:[String(o.text||''),ltxt].filter(Boolean).join('\n').slice(0,4000),
     color:/^#[0-9a-f]{6}$/i.test(o.color)?o.color:COLORS[DEFCOL[ty]],done:!!o.done,hidden:!!o.hidden,
     grp:typeof o.grp==='string'?o.grp:'',t:num(o.t)?o.t:0,media:med.filter(m=>m.k!=='link')};
-  /* 做它时的画面：五种东西都记（用户 2026-11-15 晚：清单里的测量、开槽「要和标注一样有设置视角选项」）。
-     cv / cd 是那时用着的视角和剖切深度（老数据是 clip：按高度的百分比） */
-  const v=o.view;
-  if(v&&num(v.yaw)&&num(v.pitch)&&num(v.dist)&&v.dist>0&&v3(v.t)){
-    an.view={yaw:v.yaw,pitch:Math.max(-1.5706,Math.min(1.5706,v.pitch)),roll:num(v.roll)?v.roll:0,dist:v.dist,t:v.t.slice(),o:v.o?1:0,
-      exp:num(v.exp)?Math.max(0,Math.min(100,v.exp)):0,
-      a:num(v.a)&&v.a>0?v.a:0,
-      hl:(Array.isArray(v.hl)?v.hl:[]).map(String),hk:(Array.isArray(v.hk)?v.hk:[]).map(String)};
-    if(typeof v.cv==='string'){an.view.cv=v.cv;an.view.cd=num(v.cd)?v.cd:null}
-    else an.view.clip=num(v.clip)?Math.max(0,Math.min(100,v.clip)):100}
+  /* 做它时的画面：五种东西都记（用户 2026-11-15 晚：清单里的测量、开槽「要和标注一样有设置视角选项」） */
+  const v=normV(o.view); if(v) an.view=v;
   if(nt){
     /* 标注点在模型上的某个位置；也可以没有位置（老版本的「资料」、提示条上的「不定位置」），那就只在清单里 */
     if(typeof o.pn==='string'&&v3(o.pt)){an.pn=o.pn;an.mi=Number.isInteger(o.mi)?o.mi:-1;an.ms=String(o.ms||'');an.pt=o.pt.slice()}
@@ -1765,7 +1794,7 @@ function setRO(v){
   v=!!v||LOCK; if(v===RO){roBtn();return}
   RO=v; if(!LOCK)try{localStorage.setItem('fp.ro',RO?'1':'0')}catch(_){}
   if(tool)endTool();
-  SEL.clear();selTouched=false;edOpen=false;gEdit='';vwEdit='';shareOpen=false;
+  SEL.clear();edOpen=false;gEdit='';vwEdit='';shareOpen=false;
   roBtn();renderViews();renderList();counts();state();undoBtns();renderShare();draw(false);
 }
 function roToggle(){
@@ -2193,7 +2222,7 @@ function safeRect(){const W=cv.clientWidth, H=cv.clientHeight;
    画面外或面板底下，再把镜头平移到刚好露出来 */
 function frame(v,an){
   const W=cv.clientWidth, H=Math.max(1,cv.clientHeight), t=v.t.slice();
-  let d=v.dist; if(v.a&&W/H<v.a) d*=Math.sqrt(v.a/(W/H));
+  let d=v.dist; if(v.a&&W/H<v.a-.001) d*=Math.sqrt(v.a/(W/H));      // a 记到千分位：同一块屏幕上别因为取整漂一点
   const w=an&&anchorW(an);
   if(w){
     const z=[Math.cos(v.pitch)*Math.cos(v.yaw),Math.cos(v.pitch)*Math.sin(v.yaw),Math.sin(v.pitch)],
@@ -2210,7 +2239,8 @@ function frame(v,an){
   }
   return {d,t};
 }
-function applyView(v,an){
+/* now：直接到位，不走动画（开页面时摆分享来的画面）；手机上清单在底下，盯着的那一点放到清单上面那一块的中间 */
+function applyView(v,an,now){
   showLv.clear();D.levels.forEach((n,i)=>{if(!v.hl.includes(n))showLv.add(i)});
   showKd.clear();D.kinds.forEach((n,i)=>{if(!v.hk.includes(n))showKd.add(i)});
   syncFilters();
@@ -2225,8 +2255,49 @@ function applyView(v,an){
   if(!!v.o!==orthoOn) document.getElementById('bProj').click();
   rebuild();
   const f=frame(v,an);
-  flyTo(v.yaw,v.pitch,f.d,f.t,v.roll||0);
+  if(now){stopFly();yaw=v.yaw;pitch=v.pitch;roll=v.roll||0;dist=f.d;
+    const t=aimAt(f.t,f.d);pan=[0,1,2].map(k=>t[k]-center[k]);draw(false)}
+  else flyTo(v.yaw,v.pitch,f.d,f.t,v.roll||0);
 }
+/* ---------- 分享出去的那一份带着现在的画面 ---------- */
+/* 用户（2026-11-16，第二十三版）：「需要分享时保留当前视角状态，显隐设置，包括楼层和构件类型的显隐」。
+   画面（scene）：v = getView() 那一套（镜头、投影、爆炸、用着哪个视角和它的剖切深度、藏着哪些楼层和构件类型）；
+   hi / hg / dh = 眼睛（哪几条、哪几个群组藏着，已完成那一组藏没藏）；io = 哪几条的说明收着。
+   · 「分享」的文件、「保存 HTML」：写在页面里那块数据上（scene），对方打开就是这个样子；
+   · 「分享」的链接：对方看到的数据是网上那一份，画面跟在网址的 # 后面（#s=…；# 后面的东西浏览器不发给服务器）。
+   打开时网址里带着的优先，其次是文件里的，都没有就是默认的样子。它是「这一份」的事（和 ro 一样）：不进草稿、
+   不进「导出事项」的 .json，重新生成模型时也不带（Python 那边的 _ann_json 不认它）。
+   手机上清单占着底下：记的是清单上面那一块正中对着的那一点（seenAt），打开时照对方的屏幕摆回去（aimAt）——
+   手机上分享、电脑上打开，看着的还是那一处 */
+function seenAt(){const t=[0,1,2].map(k=>center[k]+pan[k]), up=annLift(); if(!up) return t;
+  const u=2*dist*Math.tan(0.36)/Math.max(1,cv.clientHeight), y=camBasis().y;return [0,1,2].map(k=>t[k]+y[k]*up*u)}
+function sceneNow(){
+  const v=getView();v.t=seenAt().map(Math.round);
+  return {v,hi:A.filter(a=>a.hidden).map(a=>a.id),hg:G.filter(g=>g.hidden).map(g=>g.id),dh:doneHidden?1:0,
+    io:A.filter(a=>hasInfo(a)&&!infoOpen(a)).map(a=>a.id)}}
+/* 读进来的一份画面：镜头的数对不上就整份不要；眼睛、说明那几样没写就是「没记」（null：打开时不动它） */
+function normScene(o){
+  if(!o||typeof o!=='object') return null;
+  const v=normV(o.v), ids=x=>Array.isArray(x)?x.slice(0,5000).map(String):null; if(!v) return null;
+  return {v,hi:ids(o.hi),hg:ids(o.hg),dh:o.dh==null?null:!!o.dh,io:ids(o.io)}}
+/* 把一份画面摆出来（直接到位）。眼睛照它的来 —— 它列着的藏着，别的显示着；这不算改动（不进撤销、不标「改过」） */
+function applyScene(sc){
+  if(!sc) return false;
+  if(sc.hi){const h=new Set(sc.hi);A.forEach(a=>{a.hidden=h.has(a.id)})}
+  if(sc.hg){const h=new Set(sc.hg);G.forEach(g=>{g.hidden=h.has(g.id)})}
+  if(sc.dh!=null)doneHidden=sc.dh;
+  if(sc.io){const have=new Set(A.map(a=>a.id));infoOff.clear();sc.io.forEach(id=>{if(have.has(id))infoOff.add(id)})}
+  applyView(sc.v,null,true);
+  LAST=snapA();rebuildMarks();renderList();infoBtn();draw(false);
+  return true}
+/* 字 → 能放进网址的一串（base64url）/ 反过来 */
+function b64e(t){const b=new TextEncoder().encode(t);let q='';for(let i=0;i<b.length;i++)q+=String.fromCharCode(b[i]);
+  return btoa(q).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+function b64d(t){const q=atob(t.replace(/-/g,'+').replace(/_/g,'/')), b=new Uint8Array(q.length);
+  for(let i=0;i<q.length;i++)b[i]=q.charCodeAt(i);return new TextDecoder().decode(b)}
+/* 网址的 # 后面带没带画面（#s=…）：带着就读出来，读不出来当没有 */
+function sceneOfURL(){
+  try{const m=/[#&]s=([A-Za-z0-9_-]+)/.exec(location.hash||'');return m?normScene(JSON.parse(b64d(m[1]))):null}catch(_){return null}}
 function focusOn(an){const w=anchorW(an);if(w){const d=Math.min(dist,radius*.9);flyTo(yaw,pitch,d,aimAt(w,d))}}
 /* 全览要退到多远：整个模型都在画面里（竖屏窄，再退远些） */
 function fitDist(){const a=cv.clientWidth/Math.max(1,cv.clientHeight);return zoomTo(radius*2.6*(a>0&&a<1?1/a:1))}
@@ -3068,7 +3139,7 @@ function addAnn(o){
    选中的那条要是在折起来的组里，把那一组展开 */
 function select(i,fly){
   if(i!==sel)edOpen=false;
-  sel=i;if(i>=0)SEL.clear();
+  sel=i;if(i>=0){SEL.clear();if(A[i])anchor=A[i].id}
   if(i>=0&&A[i]){const an=A[i], g=grpOf(an); if(an.done)doneFold=false; else if(g)g.fold=false}
   renderList();
   if(i>=0){
@@ -3233,8 +3304,8 @@ function shrink(f){
     im.onerror=()=>{URL.revokeObjectURL(u);no()};im.src=u})}
 function readURL(f){return new Promise((ok,no)=>{const r=new FileReader();
   r.onload=()=>ok(r.result);r.onerror=no;r.readAsDataURL(f)})}
-/* L：加到哪几条上（单选是它那一条，多选一起改的时候是勾着的那几条）。fin：加完了接着做什么（多选：把勾去掉） */
-async function addFiles(L,files,fin){
+/* L：加到哪几条上（单选是它那一条，多选一起改的时候是勾着的那几条） */
+async function addFiles(L,files){
   let n=0;
   for(const f of files){
     try{
@@ -3249,11 +3320,10 @@ async function addFiles(L,files,fin){
     }catch(_){toast('「'+f.name+'」读不出来')}
   }
   if(n&&L.length>1)toast(n+' 个文件，加到了 '+L.length+' 条上');
-  if(fin)fin();
   changed(true);
 }
-function pickFiles(L,acc,fin){const f=document.getElementById('fMedia');f.accept=acc;f.value='';
-  f.onchange=()=>addFiles(L,Array.from(f.files),fin);f.click()}
+function pickFiles(L,acc){const f=document.getElementById('fMedia');f.accept=acc;f.value='';
+  f.onchange=()=>addFiles(L,Array.from(f.files));f.click()}
 /* 八个色点：cur 现在是哪个，pick(c) 点了哪个；lock 为真就只是看看、点不了 */
 function colorDots(cur,pick,lock){
   const cr=el('div','cols'+(lock?' lock':''));
@@ -3309,15 +3379,14 @@ function bindF(inp,k,L,ph){
 function syncF(){const ae=document.activeElement;
   document.querySelectorAll('#ed .bk').forEach(x=>{if(x!==ae&&x._sync)x._sync()})}
 /* 这几条自己的颜色（L 一条或几条）。已完成的统一是浅灰、所在的群组指定了颜色就跟着群组：全都是这样的时候色点
-   点不了，旁边写着为什么；只有其中几条是这样，照改，写明那几条暂时看不出。withDone：后面带「已完成」那个勾（单选时）；
-   fin：改完了接着做什么（多选：把勾去掉） */
-function annColors(L,withDone,fin){
+   点不了，旁边写着为什么；只有其中几条是这样，照改，写明那几条暂时看不出。withDone：后面带「已完成」那个勾（单选时） */
+function annColors(L,withDone){
   const cov=a=>{const q=grpOf(a);return a.done||!!(q&&q.color)}, k=L.filter(cov).length, an=L[0], g=grpOf(an),
         shown=a=>{const q=grpOf(a);return !a.done&&q&&q.color?q.color:a.color}, c0=shown(an),
         why=!k?'':k<L.length?'其中 '+k+' 条的颜色跟着群组或者已完成，改了暂时看不出'
            :L.every(a=>a.done)?'已完成的统一显示成浅灰':L.length>1?'这几条的颜色都跟着群组或者已完成'
            :'颜色跟着群组「'+g.name+'」',
-        w=el('div'), cr=colorDots(L.every(a=>shown(a)===c0)?c0:'',c=>{fSet('color',L,c);if(fin)fin();changed(true)},k===L.length);
+        w=el('div'), cr=colorDots(L.every(a=>shown(a)===c0)?c0:'',c=>{fSet('color',L,c);changed(true)},k===L.length);
   if(withDone){const dl=el('label','dn'), dc=el('input');dc.type='checkbox';dc.checked=an.done;
     dc.onchange=()=>{an.done=dc.checked;changed(true)};dl.appendChild(dc);dl.appendChild(document.createTextNode('已完成'));
     cr.appendChild(dl)}
@@ -3328,29 +3397,28 @@ function annColors(L,withDone,fin){
    是几条）；说明（单选时下面列着说明里的网址）；上传文件（单选时下面是已经挂上的文件）；颜色；群组；视角、删除。
    一起改的时候，完成、隐藏、移到群组、删除在上面那排按钮里；「重新放置」「继续加点」要到模型上去点，只有一条的
    时候才有。
-   多选改完就把勾去掉（用户 2026-11-15 深夜：「改完就取消勾选，不要保持勾选」）：点的那些（颜色、圆洞方洞、读数、
-   换一侧、更新视角、上传文件）点完就去；打字的那些（标题、说明、数），打的时候不去 —— 不然一个数都打不完 ——
-   按回车或者点到设置外面去才算改完（selTouched 记着打过字，见下面 #ed 的 focusout） */
+   多选着改东西，勾一直留着。用户（2026-11-16，第二十三版）：「现在多选，选择颜色后就会中止多选状态，改成操作不
+   中止多选」—— 头一天深夜他说的是「改完就取消勾选，不要保持勾选」，用了一天改回来了。要不选了：处理栏右上角的
+   ×、Esc、把勾一个个去掉，或者点清单里的一行（单选它） */
 function editFor(L,batch){
   const e=el('div','anE'), an=L[0], row=()=>{const r=el('div','row');e.appendChild(r);return r},
         key=k=>(batch?'b':an.id)+':'+k, of=t=>L.filter(a=>a.type===t),
-        fin=()=>{if(batch){SEL.clear();selTouched=false}}, typed=()=>{if(batch)selTouched=true},
         sec=(name,M)=>{if(batch)e.appendChild(el('div','sec',name+' · '+M.length+' 条'))},
         grid=()=>{const g=el('div','fg');e.appendChild(g);return g},
         numF=(fg,lab,k,step)=>{const l=el('label',null,lab), inp=el('input');
           inp.type='number';inp.inputMode='decimal';inp.step=step||'1';if(F[k].min!=null)inp.min=F[k].min;
           bindF(inp,k,L);
-          inp.oninput=()=>{if(fSet(k,L,parseFloat(inp.value))){typed();changed(false,key(k))}};
+          inp.oninput=()=>{if(fSet(k,L,parseFloat(inp.value)))changed(false,key(k))};
           inp.onkeydown=ev=>{if(ev.key==='Enter'){ev.preventDefault();inp.blur()}};
           l.appendChild(inp);fg.appendChild(l)},
         pick=(k,opts)=>{const r=row(), cur=fGet(k,L);
           opts.forEach(o=>{const b=el('button',cur===o[0]?'on':'',o[1]);b.type='button';b.disabled=cur===undefined;
-            b.onclick=()=>{if(fSet(k,L,o[0])){fin();changed(true)}};r.appendChild(b)})},
+            b.onclick=()=>{if(fSet(k,L,o[0]))changed(true)};r.appendChild(b)})},
         lost=(M,one,many)=>{if(M.length)e.appendChild(el('div','issue',batch?'其中 '+M.length+' 条'+many:one))};
   /* 标题：起了名字才在模型上显示；清空了就还它一个「无标题 N」 */
   const tl=el('label','fld','标题'), ti=el('input');ti.type='text';ti.maxLength=60;
   bindF(ti,'title',L,'起了名字才在模型上显示');
-  ti.oninput=()=>{fSet('title',L,ti.value);typed();changed(false,key('title'))};
+  ti.oninput=()=>{fSet('title',L,ti.value);changed(false,key('title'))};
   ti.onblur=()=>{let ch=false;L.forEach(a=>{const t=a.title.trim();if(!t||t!==a.title){a.title=t;ch=true}});
     if(!ch) return;nameAll();ti._sync();changed(false,key('title'))};
   ti.onkeydown=ev=>{if(ev.key==='Enter'){ev.preventDefault();ti.blur()}};
@@ -3379,13 +3447,13 @@ function editFor(L,batch){
       l2.appendChild(el('span',null,!batch&&!an.ov?'尺寸线（老版本自动摆的）':'尺寸线'));
       if(!batch){const rb=el('button',null,'重新放置');rb.type='button';
         rb.onclick=()=>startTool(an.chain?'dimc':'dim1',an,true);two.appendChild(rb)}
-      fb.type='button';fb.onclick=()=>{if(dimFlip(L)){fin();changed(true)}};two.appendChild(fb);l2.appendChild(two);fg.appendChild(l2);
+      fb.type='button';fb.onclick=()=>{if(dimFlip(L))changed(true)};two.appendChild(fb);l2.appendChild(two);fg.appendChild(l2);
       if(!batch&&an.chain){const ad=el('button',null,'继续加点');ad.type='button';ad.onclick=()=>startTool('dimc',an);row().appendChild(ad)}
     }
     lost(Dm.filter(a=>!dimGeo(a,false)),'原来那块板找不到了：这条尺寸画不出来。','原来的板找不到了，画不出来。')}
   /* 说明：写了才有模型上那个 i。说明里的网址在下面列出来，点了新开一页（单选时） */
   const dl=el('label','fld','说明'), ta=el('textarea');
-  bindF(ta,'text',L,PH.note);ta.oninput=()=>{fSet('text',L,ta.value);typed();changed(false,key('text'))};
+  bindF(ta,'text',L,PH.note);ta.oninput=()=>{fSet('text',L,ta.value);changed(false,key('text'))};
   dl.appendChild(ta);e.appendChild(dl);
   if(!batch){const lk=el('div','anL');lk.classList.add('bk');
     lk._sync=()=>{const ls=linksOf(an.text);lk.textContent='';lk.hidden=!ls.length;ls.forEach(q=>lk.appendChild(linkEl(q)))};
@@ -3394,8 +3462,8 @@ function editFor(L,batch){
   if(!batch){const m=el('div','anM');e.appendChild(m);fillMedia(A.indexOf(an),m,true)}     // 单选：已经挂上的文件
   const fr=batch?row():null, ub=el('button',null,'上传文件');ub.type='button';
   ub.title='照片、PDF、视频、图纸……什么文件都行；照片会缩小了再存'+(batch?'。勾着的每一条都加上':'');
-  ub.onclick=()=>pickFiles(L,'',batch?fin:null);if(fr)fr.appendChild(ub);
-  e.appendChild(annColors(L,!batch,batch?fin:null));
+  ub.onclick=()=>pickFiles(L,'');if(fr)fr.appendChild(ub);
+  e.appendChild(annColors(L,!batch));
   if(!batch&&G.length){const gl=el('label','fld gi','群组'), sl=el('select');sl.setAttribute('aria-label','群组');
     [['','不分组']].concat(G.map(g=>[g.id,g.name])).forEach(o=>{const op=el('option',null,o[1]);op.value=o[0];sl.appendChild(op)});
     sl.value=grpOf(an)?an.grp:'';sl.onchange=()=>{an.grp=sl.value;changed(true)};
@@ -3408,18 +3476,20 @@ function editFor(L,batch){
     g1.onclick=()=>{an.view?applyView(an.view,an):focusOn(an)};vr.appendChild(g1)}
   if(P.length){const g2=el('button',null,'更新视角');g2.type='button';
     g2.title=batch?'把这几条的视角都改成现在的画面':'把这一条的视角改成现在的画面';
-    g2.onclick=()=>{const n=setViews(L);fin();changed(batch);toast(batch?n+' 条的视角已改成现在的画面':'这一条的视角已改成现在的画面')};
+    g2.onclick=()=>{const n=setViews(L);changed(batch);toast(batch?n+' 条的视角已改成现在的画面':'这一条的视角已改成现在的画面')};
     vr.appendChild(g2)}
-  if(!batch){const g3=el('button','del','删除');g3.type='button';g3.title='点了就删；删错了按撤销（Ctrl+Z）';
-    g3.onclick=()=>{const i=A.indexOf(an);if(i>=0)A.splice(i,1);sel=-1;changed(true)};vr.appendChild(g3)}
+  if(!batch){const g3=el('button','del','删除');g3.type='button';g3.title='点了就删（选着它按 Delete 键也行）；删错了按撤销（Ctrl+Z）';
+    g3.onclick=()=>delOne(an);vr.appendChild(g3)}
   return e;
 }
+/* 删掉一条（单选着的那条：设置里的「删除」、Delete 键）。点了就删，删错了按撤销 */
+function delOne(an){const i=A.indexOf(an);if(i<0) return;A.splice(i,1);sel=-1;changed(true)}
 /* ---------- 清单：照待办清单的样子 ---------- */
 /* 从上到下：没分组的卡片 → 一个个群组（一行组头，下面是它的卡片）→ 已完成（标了完成的都归到这儿，
    不管原来在哪一组；取消完成就回原来的组）。
    一条一行：左边一个方格（多选）、一个色点、标题、是什么、右边一只眼睛（隐藏）；
-   点它 = 选中它（右下角出它的设置）、镜头转过去，再点一下不选了；按着 Ctrl 点 = 多选。能拖到组头上换组
-   （手机上在设置的「群组」里选）。
+   点它 = 选中它（右下角出它的设置）、镜头转过去，再点一下不选了；按着 Ctrl 点 = 多选，按着 Shift 点 = 连选。
+   能拖：拖到另一行上排序，拖到组头上换组（手机上换组在设置的「群组」里选，排序到电脑上做）。
    组头：折叠箭头、颜色、名字、条数、眼睛、铅笔（改名、换颜色、删除群组）。
    折叠只是清单的样子：存下来，不算一步撤销。 */
 let gEdit='', gFocus=false;            // 正开着编辑区的那个群组；刚新建的，名字框要拿到焦点
@@ -3431,11 +3501,11 @@ let gEdit='', gFocus=false;            // 正开着编辑区的那个群组；�
    （sel = -1），反过来单选一条，勾着的就都去掉。
    每个组头上一个方格 = 全选 / 全不选这一组（选了一部分是半勾）。勾着东西的时候，右下角的设置（renderEd）里是：
    一排按钮 —— 标记完成 / 取消完成、隐藏 / 显示、删除、移到群组（含不分组、新建群组）；下面「一起改」——
-   和单选一条时是同一套（editFor），每一项只改有它的那几条。一次处理 = 一步撤销，做完勾就都去掉 */
+   和单选一条时是同一套（editFor），每一项只改有它的那几条。一次处理 = 一步撤销。做完勾还留着（第二十三版起：
+   「操作不中止多选」；删掉的那几条没了，勾自然也没了） */
 let selFold=null;                      // 「一起改」那一块收没收着（没动过：电脑上开着；手机上地方小，收着）
 let edOpen=false;                      // 手机上：单独一条的设置开没开着（选中只是清单里那一行描金边；点那一行上的笔才开）
-let edKey='', edBusy=false;            // 设置里现在是谁的（换了人滚回顶上）；正在重排设置
-let selTouched=false;                  // 多选着、在「一起改」里打过字了：焦点一离开设置就算改完，把勾去掉
+let edKey='';                          // 设置里现在是谁的（换了人滚回顶上）
 function allBox(ids,name){
   const c=el('input'), n=ids.filter(id=>SEL.has(id)).length;
   c.type='checkbox';c.className='ck';c.checked=n>0&&n===ids.length;c.indeterminate=n>0&&n<ids.length;c.disabled=!ids.length;
@@ -3446,11 +3516,29 @@ function allBox(ids,name){
 /* 勾变了：勾着东西就不单选谁了；清单、右下角的设置、模型上选中的样子都跟上 */
 function selChanged(){if(SEL.size){sel=-1;edOpen=false}renderList();draw(false)}
 function selAll(ids,on){ids.forEach(id=>{if(on)SEL.add(id);else SEL.delete(id)});selChanged()}
+/* 清单上看得见的那些，从上到下（和 renderList 排的一样：没分组的、一个个群组、已完成；折起来的组里的不算） */
+function listShown(){
+  const idx=A.map((_,i)=>i), open=idx.filter(i=>!A[i].done);
+  return open.filter(i=>!grpOf(A[i])).concat(...G.filter(g=>!g.fold).map(g=>open.filter(i=>A[i].grp===g.id)),
+    doneFold?[]:idx.filter(i=>A[i].done))}
+/* 按着 Shift 点清单里的一行、或者它的方格：从上一回点的那一条（anchor）到这一条，中间的都勾上（on 为假：都去掉 ——
+   按着 Shift 把一个方格的勾去掉的时候）。用户（2026-11-16，第二十三版）：「清单要可以使用 shift 键连选」。
+   原来勾着的不动（是往上加，不是换成这一段）；原来单选着的那一条也算进去。上一回点的那条不在看得见的清单里了
+   （删了、折起来了、还没点过）：只管这一条。点完，这一条就是下一回的起点 */
+function pickRange(i,on){
+  const an=A[i]; if(!an||RO) return false;
+  const L=listShown(), b=L.indexOf(i), a=L.findIndex(k=>A[k].id===anchor);
+  if(on&&!SEL.size&&sel>=0&&A[sel]) SEL.add(A[sel].id);
+  const put=id=>{if(on)SEL.add(id);else SEL.delete(id)};
+  if(a<0||b<0) put(an.id); else for(let k=Math.min(a,b);k<=Math.max(a,b);k++) put(A[L[k]].id);
+  anchor=an.id;if(!SEL.size)sel=-1;
+  selChanged();return true}
 /* 按着 Ctrl 点（模型上的对象、清单里的一行）：加进多选 / 从多选里去掉。原来单选着的那一条也算进去 */
 function pickMore(i){
   const an=A[i]; if(!an||RO) return;
   if(!SEL.size&&sel>=0&&A[sel]&&sel!==i) SEL.add(A[sel].id);
   if(SEL.has(an.id)) SEL.delete(an.id); else SEL.add(an.id);
+  anchor=an.id;
   {const g=grpOf(an); if(an.done)doneFold=false; else if(g)g.fold=false}        // 在折起来的组里：把那一组展开
   if(!SEL.size) sel=-1;
   selChanged();
@@ -3459,7 +3547,7 @@ function pickMore(i){
 function newGroup(){const g={id:nid(),name:freeName('群组',G.map(x=>x.name)),color:'',hidden:false,fold:false};G.push(g);return g}
 /* 勾着的那几条（顺手把已经不在了的清掉） */
 function selList(){const have=new Set(A.map(a=>a.id));SEL.forEach(id=>{if(!have.has(id))SEL.delete(id)});return A.filter(a=>SEL.has(a.id))}
-/* 把勾着的那几条一起处理，算一步，做完勾都去掉。what：
+/* 把勾着的那几条一起处理，算一步；勾还留着（删掉的除外）。what：
    'done' 标记完成（全都已经完成了就是取消完成）、'hide' 隐藏（全都藏着就是显示）、'del' 删除、
    'move' 移到群组 arg（'' = 不分组，'+' = 新建一个再移进去）—— 移过去的不再算已完成（从「已完成」那一组挪出来了）。
    一项一项改（标题、颜色、长宽深……）走 fSet，见 editFor */
@@ -3467,19 +3555,11 @@ function selDo(what,arg){
   const L=selList(); if(!L.length) return;
   if(what==='done'){const all=L.every(a=>a.done);L.forEach(a=>{a.done=!all})}
   else if(what==='hide'){const all=L.every(a=>a.hidden);L.forEach(a=>{a.hidden=!all})}
-  else if(what==='del'){A=A.filter(a=>!SEL.has(a.id));sel=-1;
+  else if(what==='del'){A=A.filter(a=>!SEL.has(a.id));sel=-1;SEL.clear();
     toast('删了 '+L.length+' 条；删错了按撤销（Ctrl+Z）')}
   else if(what==='move'){const gid=arg==='+'?newGroup().id:(arg||'');L.forEach(a=>{a.grp=gid;a.done=false})}
   else return;
-  SEL.clear();selTouched=false;changed(true);
-}
-/* 多选着、打完字、焦点离开了设置：改完了，勾都去掉。不重排清单 —— 这一下多半是因为正点着清单里别的东西，
-   重排会把正被点的那个换掉、那一下就白点了 */
-function softClear(){
-  SEL.clear();selTouched=false;
-  document.querySelectorAll('#annList input.ck').forEach(c=>{c.checked=false;c.indeterminate=false});
-  document.querySelectorAll('#annList .an.sel').forEach(b=>{if(+b.dataset.i!==sel)b.classList.remove('sel')});
-  renderEd();draw(false);
+  changed(true);
 }
 /* 只读时右下角那一块：只是看 —— 标题、说明（里面的网址能点）、文件（能点开）。手机上只读时不出这一块：
    清单一直在底下，说明和文件看模型上那一条旁边的框（oTag） */
@@ -3496,8 +3576,7 @@ function renderEd(){
   const P=document.getElementById('ed'), L=selList(), an=!L.length&&sel>=0?A[sel]:null,
         show=!tool&&(L.length>0||(!!an&&(!NARROW.matches||edOpen))), k=!show?'':L.length?'b':an.id,
         st=k&&k===edKey?P.scrollTop:0;
-  if(!L.length)selTouched=false;
-  edBusy=true;edKey=k;P.textContent='';P.hidden=!show;
+  edKey=k;P.textContent='';P.hidden=!show;
   /* 手机上：单独一条的设置在底下，清单让开；勾着几条的那一栏到上面去，清单留在底下接着勾 */
   P.classList.toggle('multi',show&&L.length>0);document.body.classList.toggle('has-ed',show&&!L.length);
   if(show){
@@ -3511,7 +3590,7 @@ function renderEd(){
             act=(t,what,cls)=>{const b=el('button',cls||null,t);b.type='button';b.onclick=()=>selDo(what);r.appendChild(b)};
       act(L.every(a=>a.done)?'取消完成':'标记完成','done');
       act(L.every(a=>a.hidden)?'显示':'隐藏','hide');
-      act('删除','del','del');
+      act('删除','del','del');r.lastChild.title='勾着的都删掉（按 Delete 键也行）；删错了按撤销（Ctrl+Z）';
       sl.setAttribute('aria-label','移到群组');
       [['','移到…'],['-','不分组']].concat(G.map(g=>[g.id,g.name])).concat([['+','＋ 新建群组']])
         .forEach(o=>{const op=el('option',null,o[1]);op.value=o[0];sl.appendChild(op)});
@@ -3535,22 +3614,47 @@ function renderEd(){
       P.appendChild(RO?viewFor(an):editFor([an],false));
     }
   }
-  P.scrollTop=st;edBusy=false;
+  P.scrollTop=st;
 }
+/* ---------- 清单里的行：拖着排序、拖着换组 ---------- */
+/* 用户（2026-11-16，第二十三版）：「同时需要事项清单可以手动拖动排序」。
+   清单的次序就是 A 里的次序（分段显示：没分组的、一个个群组、已完成；段里照 A 的先后）。拖一行到另一行上：落在它的
+   上半截 = 排到它前面，下半截 = 排到它后面（那一侧画一条金线）；拖到别的组里的行上，连组一起换（拖到已完成的行上
+   = 标成已完成，原来的组还记着）。拖到组头上还是老样子：只换组，先后不动。
+   勾着几条、拖的是其中一条：勾着的一起走，相互的先后不变。一次拖动 = 一步撤销。只读时拖不了；手机上没有这个
+   （触屏上网页里的拖放靠不住，排序到电脑上做）。
+   dragId：正拖着哪一条 —— 拖的路上读不到 dataTransfer 里的字，只能自己记着 */
+let dragId='';
+function dragList(id){const a=A.find(x=>x.id===id); if(!a) return [];return SEL.has(id)?A.filter(x=>SEL.has(x.id)):[a]}
+function dropMark(box,after){
+  document.querySelectorAll('#annList .dropA,#annList .dropB').forEach(b=>b.classList.remove('dropA','dropB'));
+  if(box)box.classList.add(after?'dropB':'dropA')}
+/* 把 L 这几条挪到 tg 的前面（after 为真：后面）。选着的那条还选着（sel 是序号，跟着改） */
+function moveRows(L,tg,after){
+  if(RO||!L.length||!tg||L.includes(tg)) return false;
+  const mv=new Set(L), selId=sel>=0&&A[sel]?A[sel].id:'';
+  L.forEach(a=>{if(tg.done)a.done=true;else{a.done=false;a.grp=grpOf(tg)?tg.grp:''}});
+  const rest=A.filter(a=>!mv.has(a)), k=rest.indexOf(tg)+(after?1:0);
+  A=rest.slice(0,k).concat(L,rest.slice(k));
+  sel=selId?A.findIndex(a=>a.id===selId):-1;
+  changed(true);return true}
+/* 清单里的行拖到组头上：换到这一组（fn(L)：对拖过来的这几条做什么） */
 function dropOn(e,fn){
   e.ondragover=ev=>{ev.preventDefault();e.classList.add('drop')};
   e.ondragleave=()=>e.classList.remove('drop');
-  e.ondrop=ev=>{ev.preventDefault();e.classList.remove('drop');let id='';
-    try{id=ev.dataTransfer.getData('text/plain')}catch(_){}
-    const a=A.find(x=>x.id===id);if(a)fn(a)}}
+  e.ondrop=ev=>{ev.preventDefault();e.classList.remove('drop');let id=dragId;
+    if(!id)try{id=ev.dataTransfer.getData('text/plain')}catch(_){}
+    dragId='';dropMark(null);const L=dragList(id);if(L.length)fn(L)}}
 function card(i,host){
   const an=A[i], on=isOn(i), box=el('div','an'+(on?' sel':''));box.dataset.i=i;
   const h=el('div','anH'), ck=el('input');
   h.tabIndex=0;h.setAttribute('role','button');h.setAttribute('aria-pressed',on?'true':'false');
   ck.type='checkbox';ck.className='ck';ck.checked=SEL.has(an.id);
-  ck.title='选中（能多选：一条条勾，或者在模型上按着 Ctrl 点；勾好了在右下角一起改）';ck.setAttribute('aria-label','选中');
-  ck.onclick=ev=>ev.stopPropagation();
-  ck.onchange=()=>{if(ck.checked)SEL.add(an.id);else SEL.delete(an.id);selChanged()};
+  ck.title='选中（能多选：一条条勾；按着 Shift 点，连着勾一段；或者在模型上按着 Ctrl 点。勾好了在右下角一起改）';ck.setAttribute('aria-label','选中');
+  /* 点方格：勾上 / 去掉这一条。按着 Shift 点：从上一回点的那条到这条，都照这一下的来（勾上 / 去掉） */
+  ck.onclick=ev=>{ev.stopPropagation();
+    if(ev.shiftKey&&pickRange(i,ck.checked)) return;
+    if(ck.checked)SEL.add(an.id);else SEL.delete(an.id);anchor=an.id;selChanged()};
   if(!RO)h.appendChild(ck);h.appendChild(el('span','num'));
   h.appendChild(el('div','t1'));h.appendChild(el('span','ty mini'));
   /* 手机上选中的那一行多一支笔：点它，底下换成它的设置（设置右上角的 × 回到清单）。电脑上选中了就在右下角出设置，
@@ -3560,12 +3664,22 @@ function card(i,host){
   h.appendChild(ibtn(an.hidden?'eyeOff':'eye',an.hidden?'藏着：点一下显示':'隐藏（模型上不画）',
     ()=>{an.hidden=!an.hidden;changed(true)},an.hidden?'off':''));
   /* 点这一行：选中它（电脑上右下角出它的设置），镜头过去 —— 动态视角开着是回到做它时的视角，关着是角度不变、先全览再
-     拉近。再点一下：不选了。按着 Ctrl 点：多选 */
-  const go=ev=>{if(!RO&&ev&&guideKey(ev)){pickMore(i);return}
+     拉近。再点一下：不选了。按着 Ctrl 点：多选；按着 Shift 点：从上一回点的那条连着选到这条 */
+  const go=ev=>{if(!RO&&ev&&ev.shiftKey){pickRange(i,true);return}          // 按着 Shift 点：连选
+    if(!RO&&ev&&guideKey(ev)){pickMore(i);return}
     if(i===sel){select(-1);return}select(i,true)};
   h.onclick=go;h.onkeydown=ev=>{if(ev.target===h&&(ev.key==='Enter'||ev.key===' ')){ev.preventDefault();go()}};
   h.draggable=!RO;
-  if(!RO)h.ondragstart=ev=>{try{ev.dataTransfer.setData('text/plain',an.id);ev.dataTransfer.effectAllowed='move'}catch(_){}};
+  if(!RO){
+    h.ondragstart=ev=>{dragId=an.id;try{ev.dataTransfer.setData('text/plain',an.id);ev.dataTransfer.effectAllowed='move'}catch(_){}};
+    h.ondragend=()=>{dragId='';dropMark(null)};
+    /* 别的行拖到这一行上：上半截 = 排到它前面，下半截 = 排到它后面 */
+    const half=ev=>{const r=box.getBoundingClientRect();return ev.clientY>r.top+r.height/2};
+    box.ondragover=ev=>{if(!dragId||dragList(dragId).includes(an)) return;ev.preventDefault();dropMark(box,half(ev))};
+    box.ondragleave=ev=>{if(!box.contains(ev.relatedTarget))dropMark(null)};
+    box.ondrop=ev=>{ev.preventDefault();const id=dragId, after=half(ev);dragId='';dropMark(null);
+      if(id)moveRows(dragList(id),an,after)};
+  }
   box.appendChild(h);
   host.appendChild(box);
   fillRow(i,box);
@@ -3583,7 +3697,7 @@ function groupHead(g,mine){
   h.appendChild(ibtn(g.hidden?'eyeOff':'eye',g.hidden?'这一组藏着：点一下显示':'隐藏这一组（模型上不画）',
     ()=>{g.hidden=!g.hidden;changed(true)},g.hidden?'off':''));
   if(!RO){h.appendChild(ibtn('pen','改名、换颜色、删除群组',()=>{gEdit=gEdit===g.id?'':g.id;gFocus=!!gEdit;renderList()}));
-    dropOn(h,a=>{a.grp=g.id;a.done=false;changed(true)})}
+    dropOn(h,L=>{L.forEach(a=>{a.grp=g.id;a.done=false});changed(true)})}
   return h;
 }
 function groupEditor(g){
@@ -3623,7 +3737,7 @@ function renderList(){
   if(RO?(free.length&&G.length):(free.length||G.length)){const h=el('div','gh'), nm=el('span','gn',G.length?'未分组':'全部');nm.style.cursor='default';
     if(!RO)h.appendChild(allBox(free.map(i=>A[i].id),G.length?'没分组的':''));
     h.appendChild(nm);h.appendChild(el('span','mini',String(free.length)));
-    if(G.length&&!RO)dropOn(h,a=>{a.grp='';a.done=false;changed(true)});host.appendChild(h)}
+    if(G.length&&!RO)dropOn(h,L=>{L.forEach(a=>{a.grp='';a.done=false});changed(true)});host.appendChild(h)}
   {const z=zone();free.forEach(i=>card(i,z))}
   G.forEach(g=>{
     const mine=open.filter(i=>A[i].grp===g.id);
@@ -3641,7 +3755,7 @@ function renderList(){
     h.appendChild(el('span','mini',String(dn.length)));
     h.appendChild(ibtn(doneHidden?'eyeOff':'eye',doneHidden?'已完成的都藏着：点一下显示':'隐藏已完成的（模型上不画）',
       ()=>{doneHidden=!doneHidden;changed(true)},doneHidden?'off':''));
-    if(!RO)dropOn(h,a=>{a.done=true;changed(true)});
+    if(!RO)dropOn(h,L=>{L.forEach(a=>{a.done=true});changed(true)});
     host.appendChild(h);
     if(!doneFold){const z=zone();dn.forEach(i=>card(i,z))}
   }
@@ -3690,6 +3804,7 @@ function resetDraft(){
    出现能提前结束 script 的字样 */
 function htmlWith(ro){
   const o=pack();o.rev=Date.now().toString(36);
+  o.scene=sceneNow();                                    // 现在的画面：对方打开就是这个样子
   if(ro||LOCK)o.ro=1;                                    // 只读的一份：打开就是只读，那把锁点不开
   const j=JSON.stringify(o).replace(/</g,'\\u003c');
   const m=/(<script[^>]*id="ann0"[^>]*>)[\s\S]*?(<\/script>)/.exec(SRC);
@@ -3717,7 +3832,10 @@ function copyText(t,ok,fail){
    本来就是只读的一份（LOCK）只能再分享只读的。 */
 let shareOpen=false;
 function webPage(){try{return /^https?:$/.test(location.protocol)}catch(_){return false}}
-function linkFor(ro){const u=location.origin+location.pathname;return ro?u+'?view=1':u}
+/* 链接：这一页的网址（只读的带 ?view=1），后面跟着现在的画面（#s=…） */
+function linkFor(ro){const u=location.origin+location.pathname;let sc='';
+  try{sc='#s='+b64e(JSON.stringify(sceneNow()))}catch(_){}
+  return (ro?u+'?view=1':u)+sc}
 function shareLink(ro){
   ro=!!ro||LOCK;
   const u=linkFor(ro), kind=ro?'只读':'可编辑',
@@ -3747,6 +3865,7 @@ function renderShare(){
   if(!LOCK)row('可编辑',false,'对方打开能接着改');
   row('只读',true,'对方打开只能看，不能改');
   B.appendChild(el('div','mini',(LOCK?'这一份是只读的，分享出去的也是只读。':'只读：对方只能看，不能改。')+
+    '对方打开就是你现在看着的画面（视角、显示 / 隐藏）。'+
     (web?'链接：对方看到的是网上那一份。文件：带着这台设备上现在的事项。':'')));
 }
 /* 清单的文字版：和清单一个顺序 —— 没分组的、一个个群组、已处理。一条一行：标题【是什么】在哪；多大；说明；文件 */
@@ -3810,11 +3929,8 @@ document.getElementById('bCopy').onclick=()=>copyText(listText(),()=>toast('清�
 document.getElementById('lb').onclick=e=>{if(!e.target.closest('video,audio'))closeLb()};
 document.getElementById('togV').onclick=dynToggle;dynBtn();
 document.getElementById('togR').onclick=roToggle;roBtn();
-/* 多选着、在「一起改」里打过字，焦点离开了设置（点到别处、按了回车）：改完了，勾都去掉。
-   点设置里的空白处不算离开（不让它把焦点带走） */
-{const P=document.getElementById('ed');
- P.addEventListener('focusout',e=>{if(!edBusy&&selTouched&&SEL.size&&!P.contains(e.relatedTarget))softClear()});
- P.addEventListener('mousedown',e=>{if(!e.target.closest('input,textarea,select,button,label,a,.th,.chip'))e.preventDefault()})}
+/* 点设置里的空白处：别把正在打字的那个框的焦点带走 */
+document.getElementById('ed').addEventListener('mousedown',e=>{if(!e.target.closest('input,textarea,select,button,label,a,.th,.chip'))e.preventDefault()});
 NARROW.addEventListener('change',()=>renderList());     // 清单里那支笔手机上才有：窗口变了重排一次（顺带 renderEd）
 addEventListener('keydown',e=>{
   const k=(e.key||'').toLowerCase(), t=e.target, tag=((t&&t.tagName)||'').toLowerCase();
@@ -3832,6 +3948,14 @@ addEventListener('keydown',e=>{
     return}
   if(k==='enter'&&tool&&tool.chain&&tool.stage==='pts'&&!typing&&!/^(button|a)$/.test(tag)){
     e.preventDefault();finishPts();return}
+  /* Delete：删掉选着的那一条 / 勾着的那几条。用户（2026-11-16，第二十三版）：「改成 delete 键可以删除」。正在框里
+     打字（那是删字）、正在做东西、只读、开着大图的时候不管；焦点在清单的方格、滑块上不算打字。删错了按撤销 */
+  if(k==='delete'){
+    const txt=tag==='textarea'||tag==='select'||(tag==='input'&&!/^(checkbox|radio|range|button|file)$/.test(t.type||''));
+    if(txt||tool||RO||e.ctrlKey||e.metaKey||e.altKey||!document.getElementById('lb').hidden) return;
+    if(SEL.size){e.preventDefault();selDo('del')}
+    else if(sel>=0&&A[sel]){e.preventDefault();const an=A[sel];delOne(an);toast('删了「'+an.title+'」；删错了按撤销（Ctrl+Z）')}
+    return}
   if(k!=='escape') return;
   if(!document.getElementById('lb').hidden){closeLb();return}
   /* Esc：有引导点先清引导点，再按一次才退出工具 */
@@ -3853,8 +3977,12 @@ addEventListener('beforeunload',e=>{if(dirty&&!lsOK&&!LOCK){e.preventDefault();e
 })();
 
 rebuild(); resize();
-/* 手机上清单占着底下三分之一：开页面时把模型放在它上面那一块的中间，别一打开就被清单压着 */
-if(NARROW.matches){const t=aimAt(center,dist);pan=[0,1,2].map(k=>t[k]-center[k]);draw(false)}
+/* 分享来的一份带着画面（网址里的优先，其次是文件里的）：照它摆。没有就是默认的样子 —— 手机上清单占着底下三分之一，
+   把模型放在它上面那一块的中间，别一打开就被清单压着 */
+if(!applyScene(sceneOfURL()||normScene(ANN0.scene))&&NARROW.matches){
+  const t=aimAt(center,dist);pan=[0,1,2].map(k=>t[k]-center[k]);draw(false)}
+/* 上次在这个浏览器里勾的楼层、构件类型：接着用（刷新不回到全勾着）。从这儿起，勾选一变就记下来 */
+loadVis();visReady=true;
 /* 屏幕缩放比变了不一定有 resize 事件（窗口拖到另一块屏幕）：自己盯着，变了就重排画布 */
 (function watch(){
   try{matchMedia('(resolution:'+(devicePixelRatio||1)+'dppx)')
