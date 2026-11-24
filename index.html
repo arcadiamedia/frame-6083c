@@ -567,11 +567,14 @@ let idxCount=0, edgeCount=0;
      着色器里一起挪，正好落回平面上。
    · 什么时候重算：剖切面（CN / CD / CU）、爆炸、楼层 / 类型的勾选（geoVer）变了 —— draw 里比一下 capKey。
      几千根料一回只要几毫秒，拖剖切深度的滑块时每一帧都跟着算。
-   · 斜线：剖切面里顺着 (CU − CV) 量，每 S 毫米一条（"/" 那个方向）。用户（2026-11-24，第三十版）：「这个斜线我希望
-     不要跟着缩放自动换，是一个固定值，大概 10 个像素一条」—— 第二十九版的 S 取 2 的整数次幂（屏幕上 5～10 像素、
-     缩放过一档跳一回疏密），现在 S 跟着缩放连续变，屏幕上始终 10 个像素一条（hatchMM）。起算记在 HATCH 里（hatchAt）：
-     平移、旋转的时候斜线钉在模型上跟着走；缩放的时候画面中间那一点上的斜线不动，往外的按 10 像素一条排开。
-     线宽一个像素，按离线中心多少像素做抗锯齿。
+   · 斜线：剖切面里顺着 (CU − CV) 量，每 HATCH_MM 毫米一条（"/" 那个方向），钉在模型上 —— 像画在切口上的纹，
+     转、移、缩都跟着模型走，一块料上的斜线条数远近都一样。来回改过两版：第二十九版间距取 2 的整数次幂、屏幕上
+     5～10 像素（缩放过一档跳一回疏密）；用户：「不要跟着缩放自动换，是一个固定值，大概 10 个像素一条」—— 第三十版
+     改成屏幕上固定 10 像素（缩放时斜线在切口上滑、一块料上的条数跟着变）；用户：「斜线条现在还是动态的，不是固定的」，
+     问了以后说「我说的固定就是斜线线条之间的间距是固定的，不会拉远就变疏、拉近就变密，它一直是个固定的」—— 第三十一版
+     钉在模型上、10 毫米一条（拉近到一根立柱看得清的时候大约 10 像素）。
+     线宽一个像素，按离线中心多少像素做抗锯齿；拉得很远、屏幕上不到 4 个像素一条时，慢慢匀成一片浅灰（覆盖多少就
+     深多少，最多四成五），免得挤出摩尔纹。
    · 拾取：切口也画进拾取那一遍（同一根料的号），点在切口上就是点中这根料；rawHit 里视线先打在切口上的那一点。 */
 const VSC=`
 attribute vec3 aPos; attribute vec2 aExp; attribute float aId;
@@ -582,7 +585,7 @@ vec3 idcol(float i){ float r=mod(i,256.0); float g=mod(floor(i/256.0),256.0);
   float b=floor(i/65536.0); return vec3(r,g,b)/255.0; }
 void main(){
   vec3 p=aPos; p.xy += aExp*uExpK;
-  /* 落在第几条斜线的哪儿（顶点里按高精度算、减掉画面中间那一点的条数，片元里只剩不大的数） */
+  /* 落在第几条斜线的哪儿（顶点里按高精度算、减掉画面中间那儿的整数条，片元里只剩不大的数） */
   vS=(dot(p,uHU)-dot(p,uHV))*0.70710678/uHS-uS0;
   if(uZBias>0.0){ p += (uOrtho>0.5 ? -uFwd : normalize(uEye-p))*uZBias; }
   gl_Position=uMVP*vec4(p,1.0);
@@ -600,7 +603,9 @@ void main(){
   if(uPick>0.5){ gl_FragColor=vec4(vId,1.0); return; }
   if(uMode>0.5){ gl_FragColor=vec4(0.22,0.17,0.11,1.0); return; }
   float f=fract(vS), d=min(f,1.0-f)*uHPx;                 /* 离最近那条斜线多少像素 */
-  float a=clamp(uHW+0.5-d,0.0,1.0);
+  float aL=clamp(uHW+0.5-d,0.0,1.0);                       /* 一条条的线（抗锯齿） */
+  float aA=min(0.45,2.0*uHW/max(uHPx,0.001));              /* 太密了：照斜线盖住的比例匀成一片 */
+  float a=mix(aA,aL,clamp((uHPx-2.0)/2.0,0.0,1.0));
   gl_FragColor=vec4(mix(vec3(0.84,0.80,0.72),vec3(0.24,0.20,0.15),a),1.0);
 }`;
 const PC=prog(VSC,FSC);
@@ -614,20 +619,13 @@ const locC={pos:gl.getAttribLocation(PC,'aPos'),exp:gl.getAttribLocation(PC,'aEx
 const CAP={bP:gl.createBuffer(),bE:gl.createBuffer(),bI:gl.createBuffer(),bLP:gl.createBuffer(),bLE:gl.createBuffer(),
   pos:[],exp:[],id:[],lp:[],le:[],n:0,nl:0,cut:0};
 let capKey='', geoVer=0;
-/* 斜线隔多少毫米一条：屏幕上 10 个像素（k：这里每毫米合几个设备像素，dpr：一个 CSS 像素合几个设备像素） */
-function hatchMM(k,dpr){return 10*dpr/Math.max(k,1e-9)}
-/* 斜线从哪儿起算。A：上一回画面中间（镜头盯着）的那一点，ph：那一点落在第几条斜线的哪儿（0～1），S：那时候几毫米一条。
-   每画一回挪到这一回的画面中间：先照上一回的算出这一点的相位，再从这一点按新的间距排 —— 平移时同一个世界点的相位
-   不变（斜线钉在模型上），缩放时画面中间那一点上的斜线不动。剖切面换了（CU / CV）重新起算 */
-const HATCH={A:null,ph:0,S:1,s0:0,key:''};
+/* 斜线隔多少毫米一条（钉在模型上，见上） */
+const HATCH_MM=10;
+/* 世界点 w 在剖切面里顺着斜线的法向走了多少毫米（第 hatchS(w)/HATCH_MM 条斜线） */
 function hatchS(w){return (V.dot(w,CU)-V.dot(w,CV))*Math.SQRT1_2}
-function hatchAt(c,S){
-  const key=CU.join()+'|'+CV.join();
-  if(!HATCH.A||HATCH.key!==key){HATCH.A=c.slice();HATCH.ph=0;HATCH.key=key}
-  else{const ph=HATCH.ph+(hatchS(c)-hatchS(HATCH.A))/HATCH.S;HATCH.ph=ph-Math.floor(ph);HATCH.A=c.slice()}
-  HATCH.S=S;HATCH.s0=hatchS(c)/S-HATCH.ph}
-/* 世界点 w 落在第几条斜线的哪儿（0～1）—— 测试用 */
-function hatchPhase(w){const ph=HATCH.ph+(hatchS(w)-hatchS(HATCH.A))/HATCH.S;return ph-Math.floor(ph)}
+/* 交给着色器的斜线参数。c：画面中间（镜头盯着）的那一点，k：这里每毫米几个设备像素，dpr：一个 CSS 像素几个设备像素。
+   s0 取 c 那儿的整数条 —— 只是让着色器里的数不大，斜线的位置不受它影响（还是从世界原点起算，钉在模型上） */
+function hatchUni(c,k,dpr){const S=HATCH_MM;return {S,s0:Math.floor(hatchS(c)/S),hpx:S*k,hw:.5*dpr}}
 /* 一根木料 p 被平面 (n, d) 切出来的切口：凸多边形的顶点（世界坐标，没爆炸），从 +n 那边看逆时针；没切到就是 null。
    off：这块板爆炸挪出去的那一截在 n 上的分量 */
 function capOf(p,n,d,u,v,off){
@@ -673,10 +671,10 @@ function drawCaps(mvp,pick,e,c,fwn,h){
   gl.uniformMatrix4fv(locC.mvp,false,new Float32Array(mvp));
   gl.uniform1f(locC.expk,expK);gl.uniform1f(locC.pick,pick?1:0);
   gl.uniform3f(locC.eye,e[0],e[1],e[2]);gl.uniform3f(locC.fwd,fwn[0],fwn[1],fwn[2]);gl.uniform1f(locC.ortho,orthoOn?1:0);
-  const dpr=Math.max(.5,cv.width/Math.max(1,cv.clientWidth||innerWidth)||1), k=Math.max(1e-9,(h/2)/(dist*Math.tan(0.36))), S=hatchMM(k,dpr);
-  hatchAt(c,S);
+  const dpr=Math.max(.5,cv.width/Math.max(1,cv.clientWidth||innerWidth)||1), k=Math.max(1e-9,(h/2)/(dist*Math.tan(0.36))),
+        hu=hatchUni(c,k,dpr);
   gl.uniform3f(locC.hu,CU[0],CU[1],CU[2]);gl.uniform3f(locC.hv,CV[0],CV[1],CV[2]);
-  gl.uniform1f(locC.hs,S);gl.uniform1f(locC.s0,HATCH.s0);gl.uniform1f(locC.hpx,S*k);gl.uniform1f(locC.hw,.5*dpr);
+  gl.uniform1f(locC.hs,hu.S);gl.uniform1f(locC.s0,hu.s0);gl.uniform1f(locC.hpx,hu.hpx);gl.uniform1f(locC.hw,hu.hw);
   /* 主程序的几个顶点属性先关掉（下一帧 draw 一开头会重新绑上） */
   [loc.pos,loc.nrm,loc.col,loc.id,loc.exp].forEach(l=>{if(l>=0)gl.disableVertexAttribArray(l)});
   const bind=(b,l,n)=>{if(l<0)return;gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.enableVertexAttribArray(l);gl.vertexAttribPointer(l,n,gl.FLOAT,false,0,0)};
@@ -1233,7 +1231,7 @@ const DEFCOL={hl:4,notch:1,hole:6,dim:5,note:0};
 const DONEC='#c9c9c9', DONEA=.25, DONEF=.22, DONEL=.25;
 const PH={note:'写了说明，模型上才有那个 i；写上网址会变成能点的链接'};
 const TIPS={hl:'点一下要标的那根木料',notch:'点一下开槽的起点（自动吸附顶点、中点、边线），再往要开的方向拉',
-  hole:'点一下开洞的位置（洞从点中的那个面打穿）',note:'点一下要标的位置（自动吸附顶点、中点、边线）'};
+  hole:'点一下开洞的位置（自动吸附顶点、中点、边线；洞从点中的那个面打穿）',note:'点一下要标的位置（自动吸附顶点、中点、边线）'};
 /* 能点的小图标：眼睛（显示着）/ 划掉的眼睛（藏着）、铅笔（改名）、叉（删除）、箭头（折叠） */
 const ICON={
   eye:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>',
@@ -1701,6 +1699,9 @@ function pack(){return {v:2,job:D.job||'',rev:ANN0.rev||'0',items:A,groups:G,vie
    pos / off 是块的中心离木料起点（左、内、下）的距离。 */
 function initCut(an,p,h){
   const b=boxOf(p), na=h.na, oth=[0,1,2].filter(k=>k!==na), ext=k=>b.hi[k]-b.lo[k];
+  /* 开洞也吸附（第三十一版，用户：「开洞也要能吸附」）：洞的位置取吸附到的那一点（h.loc），洞还是从点中的那个面打进去
+     （那个面上的坐标照点中的那一点 h.raw）。没有 loc 的（引导点那条路给的已经是吸附过的点）照旧用 raw */
+  if(an.type==='hole'&&h.loc){const q=h.loc.slice(); q[na]=h.raw[na]; h={raw:q,na,ns:h.ns}}
   const ax=ext(oth[0])>=ext(oth[1])?oth[0]:oth[1], wa=ax===oth[0]?oth[1]:oth[0];
   const g={na,ns:h.ns,ax,wa,sh:'c',d:Math.min(25,Math.round(ext(wa))),
     L:Math.min(100,Math.round(ext(ax))),W:r1(ext(wa)),Dp:Math.min(20,r1(ext(na))),
@@ -2790,6 +2791,11 @@ function snapAt(cx,cy,touch,ref){
   if(best) return {pi:bq.pi,pn:PK(D.panels[bq.pi]),p:r3(best.q),kind:best.kind};
   return p?{pi:p.pi,pn:PK(D.panels[p.pi]),p:r3(rawHit(p,cx,cy).raw),kind:'f'}:null;
 }
+/* 开洞用的吸附（第三十一版）：照 snapAt 吸（光标周围露出来的木料都算，切口上的点 3 像素内打平优先），吸到的是真的点
+   （不是面上的随便一点）、又落在某根木料的表面上才算；不然 null（照旧点在哪开在哪）。
+   光标在切口的角外面一点、正下方是别的木料时，只看正下方那根就会吸到它藏在切口底下的角 */
+function holeSnap(cx,cy,touch){const s=snapAt(cx,cy,touch,null);
+  return s&&s.kind!=='f'&&piecesOn(L2W0(s.pi,s.p)).length?s:null}
 /* 从世界点 o 出发的模型三根轴：near = 鼠标在屏幕上挨着哪根（没有就 -1），best = 从 o 到鼠标的
    方向最像哪根。几乎正对着镜头的那根轴在屏幕上缩成一个点，不参加 */
 function axesAt(cx,cy,o,thr){
@@ -3307,6 +3313,10 @@ function toolTap(cx,cy,touch){
     if(!r||r.L<1){draw(false);toast(r?'槽的长度是 0：换个地方点，或者输入长度'
       :'这个方向上起点旁边没有能开的木料：换个方向，或者输入长度');return}
     const an=makeCut(r);endTool();addAnn(an);return}
+  /* 开洞：吸到了点（顶点、中点、边线、切口的角和边……），就在那个点所在的木料上、朝着镜头的那个面开（和引导点那条路一样，
+     见 realPt）；吸不到点，照旧点在哪开在哪 */
+  if(T==='hole'){const hs=holeSnap(cx,cy,touch);
+    if(hs){takePt({W0:L2W0(hs.pi,hs.p),pt:{pn:hs.pn,p:hs.p}},cx,cy,touch);return}}
   const p=pickPiece(cx,cy);
   if(!p){draw(false);toast('请点在木料上');return}
   const h=hitInfo(p,cx,cy,touch), base={pn:PK(D.panels[p.pi]),mi:p.mi,ms:sig(p)};
@@ -3359,8 +3369,12 @@ function hoverNow(){
     else{const r=resolvePt(hovXY[0],hovXY[1],false);hover=r?{w:r.w,kind:r.s?r.s.kind:'',res:r}:null}
   }else if(tool.type==='notch'&&tool.cut){const r=cutAt(hovXY[0],hovXY[1],false);
     hover=r?{cut:r,xy:hovXY.slice(),w:r.w,kind:r.kind}:null;
-  }else{const p=pickPiece(hovXY[0],hovXY[1]);
-    if(p){const h=hitInfo(p,hovXY[0],hovXY[1],false), sn=tool.type==='note'||tool.type==='notch';
+  }else{
+    /* 开洞先照量尺寸那样吸（附近露出来的木料都算、切口上的点优先 —— 见 holeSnap）；吸不到点再照点中的那根料 */
+    const hs=tool.type==='hole'?holeSnap(hovXY[0],hovXY[1],false):null;
+    if(hs){hover={w:L2W(hs.pi,hs.p),kind:hs.kind};draw(false);return}
+    const p=pickPiece(hovXY[0],hovXY[1]);
+    if(p){const h=hitInfo(p,hovXY[0],hovXY[1],false), sn=tool.type==='note'||tool.type==='notch'||tool.type==='hole';
       hover={w:L2W(p.pi,sn?h.loc:h.raw),kind:sn?h.snap:'f'}}
     else hover=null}
   draw(false);
