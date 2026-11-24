@@ -567,9 +567,11 @@ let idxCount=0, edgeCount=0;
      着色器里一起挪，正好落回平面上。
    · 什么时候重算：剖切面（CN / CD / CU）、爆炸、楼层 / 类型的勾选（geoVer）变了 —— draw 里比一下 capKey。
      几千根料一回只要几毫秒，拖剖切深度的滑块时每一帧都跟着算。
-   · 斜线：剖切面里顺着 (CU − CV) 量，每 S 毫米一条（"/" 那个方向）。S 取 2 的整数次幂，让屏幕上的间距落在
-     5～10 个像素（hatchMM）—— 远看近看都是一样疏密的斜线；斜线钉在模型上，平移、旋转跟着走，缩放过了一档
-     才换一回疏密，不会边缩边滑。线宽一个像素，按离线中心多少像素做抗锯齿。
+   · 斜线：剖切面里顺着 (CU − CV) 量，每 S 毫米一条（"/" 那个方向）。用户（2026-11-24，第三十版）：「这个斜线我希望
+     不要跟着缩放自动换，是一个固定值，大概 10 个像素一条」—— 第二十九版的 S 取 2 的整数次幂（屏幕上 5～10 像素、
+     缩放过一档跳一回疏密），现在 S 跟着缩放连续变，屏幕上始终 10 个像素一条（hatchMM）。起算记在 HATCH 里（hatchAt）：
+     平移、旋转的时候斜线钉在模型上跟着走；缩放的时候画面中间那一点上的斜线不动，往外的按 10 像素一条排开。
+     线宽一个像素，按离线中心多少像素做抗锯齿。
    · 拾取：切口也画进拾取那一遍（同一根料的号），点在切口上就是点中这根料；rawHit 里视线先打在切口上的那一点。 */
 const VSC=`
 attribute vec3 aPos; attribute vec2 aExp; attribute float aId;
@@ -580,7 +582,7 @@ vec3 idcol(float i){ float r=mod(i,256.0); float g=mod(floor(i/256.0),256.0);
   float b=floor(i/65536.0); return vec3(r,g,b)/255.0; }
 void main(){
   vec3 p=aPos; p.xy += aExp*uExpK;
-  /* 离起算的那条斜线隔了几条（顶点里按高精度算、减掉画面中间附近的整数条，片元里只剩小数） */
+  /* 落在第几条斜线的哪儿（顶点里按高精度算、减掉画面中间那一点的条数，片元里只剩不大的数） */
   vS=(dot(p,uHU)-dot(p,uHV))*0.70710678/uHS-uS0;
   if(uZBias>0.0){ p += (uOrtho>0.5 ? -uFwd : normalize(uEye-p))*uZBias; }
   gl_Position=uMVP*vec4(p,1.0);
@@ -612,8 +614,20 @@ const locC={pos:gl.getAttribLocation(PC,'aPos'),exp:gl.getAttribLocation(PC,'aEx
 const CAP={bP:gl.createBuffer(),bE:gl.createBuffer(),bI:gl.createBuffer(),bLP:gl.createBuffer(),bLE:gl.createBuffer(),
   pos:[],exp:[],id:[],lp:[],le:[],n:0,nl:0,cut:0};
 let capKey='', geoVer=0;
-/* 斜线隔多少毫米一条：屏幕上 7 个像素上下（k：这里每毫米合几个设备像素，dpr：一个 CSS 像素合几个设备像素），取 2 的整数次幂 */
-function hatchMM(k,dpr){return Math.pow(2,Math.round(Math.log2(7*dpr/Math.max(k,1e-9))))}
+/* 斜线隔多少毫米一条：屏幕上 10 个像素（k：这里每毫米合几个设备像素，dpr：一个 CSS 像素合几个设备像素） */
+function hatchMM(k,dpr){return 10*dpr/Math.max(k,1e-9)}
+/* 斜线从哪儿起算。A：上一回画面中间（镜头盯着）的那一点，ph：那一点落在第几条斜线的哪儿（0～1），S：那时候几毫米一条。
+   每画一回挪到这一回的画面中间：先照上一回的算出这一点的相位，再从这一点按新的间距排 —— 平移时同一个世界点的相位
+   不变（斜线钉在模型上），缩放时画面中间那一点上的斜线不动。剖切面换了（CU / CV）重新起算 */
+const HATCH={A:null,ph:0,S:1,s0:0,key:''};
+function hatchS(w){return (V.dot(w,CU)-V.dot(w,CV))*Math.SQRT1_2}
+function hatchAt(c,S){
+  const key=CU.join()+'|'+CV.join();
+  if(!HATCH.A||HATCH.key!==key){HATCH.A=c.slice();HATCH.ph=0;HATCH.key=key}
+  else{const ph=HATCH.ph+(hatchS(c)-hatchS(HATCH.A))/HATCH.S;HATCH.ph=ph-Math.floor(ph);HATCH.A=c.slice()}
+  HATCH.S=S;HATCH.s0=hatchS(c)/S-HATCH.ph}
+/* 世界点 w 落在第几条斜线的哪儿（0～1）—— 测试用 */
+function hatchPhase(w){const ph=HATCH.ph+(hatchS(w)-hatchS(HATCH.A))/HATCH.S;return ph-Math.floor(ph)}
 /* 一根木料 p 被平面 (n, d) 切出来的切口：凸多边形的顶点（世界坐标，没爆炸），从 +n 那边看逆时针；没切到就是 null。
    off：这块板爆炸挪出去的那一截在 n 上的分量 */
 function capOf(p,n,d,u,v,off){
@@ -659,10 +673,10 @@ function drawCaps(mvp,pick,e,c,fwn,h){
   gl.uniformMatrix4fv(locC.mvp,false,new Float32Array(mvp));
   gl.uniform1f(locC.expk,expK);gl.uniform1f(locC.pick,pick?1:0);
   gl.uniform3f(locC.eye,e[0],e[1],e[2]);gl.uniform3f(locC.fwd,fwn[0],fwn[1],fwn[2]);gl.uniform1f(locC.ortho,orthoOn?1:0);
-  const dpr=Math.max(.5,cv.width/Math.max(1,cv.clientWidth||innerWidth)||1), k=Math.max(1e-9,(h/2)/(dist*Math.tan(0.36))), S=hatchMM(k,dpr),
-        sT=(V.dot(c,CU)-V.dot(c,CV))*Math.SQRT1_2;
+  const dpr=Math.max(.5,cv.width/Math.max(1,cv.clientWidth||innerWidth)||1), k=Math.max(1e-9,(h/2)/(dist*Math.tan(0.36))), S=hatchMM(k,dpr);
+  hatchAt(c,S);
   gl.uniform3f(locC.hu,CU[0],CU[1],CU[2]);gl.uniform3f(locC.hv,CV[0],CV[1],CV[2]);
-  gl.uniform1f(locC.hs,S);gl.uniform1f(locC.s0,Math.floor(sT/S));gl.uniform1f(locC.hpx,S*k);gl.uniform1f(locC.hw,.5*dpr);
+  gl.uniform1f(locC.hs,S);gl.uniform1f(locC.s0,HATCH.s0);gl.uniform1f(locC.hpx,S*k);gl.uniform1f(locC.hw,.5*dpr);
   /* 主程序的几个顶点属性先关掉（下一帧 draw 一开头会重新绑上） */
   [loc.pos,loc.nrm,loc.col,loc.id,loc.exp].forEach(l=>{if(l>=0)gl.disableVertexAttribArray(l)});
   const bind=(b,l,n)=>{if(l<0)return;gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.enableVertexAttribArray(l);gl.vertexAttribPointer(l,n,gl.FLOAT,false,0,0)};
@@ -1434,8 +1448,12 @@ function rawHit(p,cx,cy){
   return {p,raw,na,ns};
 }
 /* 两个可吸点哪个更该吸：先比种类（顶点 / 中点 / 圆心 > 垂足 > 边线上），同一种比屏幕上
-   离鼠标的距离，差不到半个像素的取离镜头近的那个 */
-function better(c,b){return !b||c.rank<b.rank||(c.rank===b.rank&&(c.dd<b.dd-.5||(c.dd<b.dd+.5&&c.z<b.z)))}
+   离鼠标的距离，差不到半个像素的取离镜头近的那个。
+   切口上的点（cut）差不到 3 个像素就取离镜头近的（第三十版）：剖开以后剖切面是最前面那一层，切口的角边上 1、2 个
+   像素常有一个藏在切口底下的点（俯视剖开，立柱底下窗台料的顶角离立柱的切口角只差 1 毫米）—— 邻近木料露没露出来
+   是按周围两三个像素查的，它算露着，又比切口的角离鼠标近一点点，原来会吸到它 */
+function better(c,b){if(!b) return true; const tol=(c.cut||b.cut)?3:.5;
+  return c.rank<b.rank||(c.rank===b.rank&&(c.dd<b.dd-tol||(c.dd<b.dd+tol&&c.z<b.z)))}
 /* 木料 p 上离屏幕点 (cx,cy) 最近、又在 thr 个像素以内的可吸点（没有就是 null）：
    v 顶点 / m 棱的中点 / c 圆心（extra：这根木料上标的圆洞）/ p 垂足（要给 ref —— 上一个点，
    已经换算到这块板的局部坐标）/ e 边线上离鼠标最近的那一点。
@@ -1452,9 +1470,9 @@ function snapOn(p,cx,cy,thr,ref,extra,seen){
   const sg=ar>0?1:-1, ev=q=>orthoOn?[-d[0],-d[1],-d[2]]:[o[0]-q[0],o[1]-q[1],o[2]-q[2]],
         fY=(q,k)=>ev(q)[1]*k>0,
         fS=(i,q)=>{const a=ring[(i+n)%n], c=ring[(i+1)%n], e=ev(q);return ((c[1]-a[1])*e[0]-(c[0]-a[0])*e[2])*sg>0};
-  const tryPt=(q,kind,rank)=>{ if(cl&&V.dot(cl.n,q)>cl.d+1e-6) return; const w=L2W(pi,q), s=w2s(w); if(s[2]<=0) return;
+  const tryPt=(q,kind,rank,cut)=>{ if(cl&&V.dot(cl.n,q)>cl.d+1e-6) return; const w=L2W(pi,q), s=w2s(w); if(s[2]<=0) return;
     const dd=Math.hypot(s[0]-cx,s[1]-cy); if(dd>=thr||(seen&&!seen(s[0],s[1]))) return;
-    const c={q,kind,rank,dd,z:-V.dot(V.sub(w,cb.e),cb.z)}; if(better(c,best)) best=c };
+    const c={q,kind,rank,dd,z:-V.dot(V.sub(w,cb.e),cb.z),cut:!!cut}; if(better(c,best)) best=c };
   /* 这根木料看得见的棱：两个面上的轮廓各一圈，加上连着两个面的那几条 */
   const segs=[], mh=meshOf(p);
   if(mh) mh.forEach(f=>{ if(V.dot(ev(f[0]),nrmOf(f))<=0) return;
@@ -1466,18 +1484,54 @@ function snapOn(p,cx,cy,thr,ref,extra,seen){
     if(up) segs.push([A0,A1]);
     if(f0||up) tryPt(A0,'v',0);
     if(f1||up) tryPt(A1,'v',0)});
+  /* 剖开了的（第三十版，用户：「量尺寸，开槽之类的操作也要能吸附到切口的角和边」）：
+     ① 棱只留没切掉的那一截（整条切掉的不要；被切了一截的不取中点 —— 那不是这条棱的中点）；
+     ② 切口朝着镜头的话（从另一面看，切口在木料背后），切口的角算顶点，切口的边和棱一样能取中点、垂足、最近点 */
+  if(cl){
+    const sd=q=>V.dot(cl.n,q)-cl.d;
+    for(let i=segs.length-1;i>=0;i--){const s=segs[i], a=sd(s[0]), b=sd(s[1]);
+      if(a>1e-6&&b>1e-6){segs.splice(i,1);continue}
+      if(a>1e-6||b>1e-6){const t=a/(a-b), m=[0,1,2].map(k=>s[0][k]+(s[1][k]-s[0][k])*t);
+        segs[i]=a>1e-6?[m,s[1]]:[s[0],m];segs[i].cut=1}}
+    const cap=capL(p,cl);
+    if(cap&&V.dot(ev(cap[0]),cl.n)>0) cap.forEach((q,i)=>{const e=[q,cap[(i+1)%cap.length]];e.cap=1;segs.push(e);tryPt(q,'v',0,1)});
+  }
   /* 中点：棱在屏幕上够长才吸，太短的棱上顶点和中点挤在一起，中点只会碍事 */
-  segs.forEach(s=>{const a=w2s(L2W(pi,s[0])), c=w2s(L2W(pi,s[1]));
-    if(Math.hypot(a[0]-c[0],a[1]-c[1])>=thr*2.4) tryPt([0,1,2].map(k=>(s[0][k]+s[1][k])/2),'m',0)});
+  segs.forEach(s=>{if(s.cut) return; const a=w2s(L2W(pi,s[0])), c=w2s(L2W(pi,s[1]));
+    if(Math.hypot(a[0]-c[0],a[1]-c[1])>=thr*2.4) tryPt([0,1,2].map(k=>(s[0][k]+s[1][k])/2),'m',0,s.cap)});
   (extra||[]).forEach(x=>{if(ev(x.q)[x.na]*x.s>0) tryPt(x.q,'c',0)});
   /* 垂足：上一个点垂直落到某条棱上的那一点（落在棱的两头之外、或者就是上一个点自己的不算） */
   if(ref) segs.forEach(s=>{const u=V.sub(s[1],s[0]), L=V.dot(u,u); if(L<1e-9) return;
     const t=V.dot(V.sub(ref,s[0]),u)/L; if(t<1e-4||t>1-1e-4) return;
     const f=[0,1,2].map(k=>s[0][k]+u[k]*t);
-    if(Math.hypot(f[0]-ref[0],f[1]-ref[1],f[2]-ref[2])>.05) tryPt(f,'p',1)});
-  segs.forEach(s=>tryPt(raySeg(o,d,s[0],s[1]),'e',2));
+    if(Math.hypot(f[0]-ref[0],f[1]-ref[1],f[2]-ref[2])>.05) tryPt(f,'p',1,s.cap)});
+  segs.forEach(s=>tryPt(raySeg(o,d,s[0],s[1]),'e',2,s.cap));
   return best;
 }
+/* 一组在同一个平面上的点（法线 n）的凸包：从 +n 那边看逆时针排好；不到三个点（或者全在一条线上）是 null */
+function planeHull(pts,n){
+  const a=Math.abs(n[0])<.9?[1,0,0]:[0,1,0], u=V.norm(V.cross(a,n)), v=V.cross(n,u);
+  const P=pts.map(q=>[V.dot(q,u),V.dot(q,v),q]).sort((x,y)=>x[0]-y[0]||x[1]-y[1]);
+  const cr=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]), lo=[], up=[];
+  for(const q of P){while(lo.length>1&&cr(lo[lo.length-2],lo[lo.length-1],q)<=1e-9)lo.pop();lo.push(q)}
+  for(let i=P.length-1;i>=0;i--){const q=P[i];while(up.length>1&&cr(up[up.length-2],up[up.length-1],q)<=1e-9)up.pop();up.push(q)}
+  const h=lo.slice(0,-1).concat(up.slice(0,-1));
+  return h.length>=3?h.map(q=>q[2]):null}
+/* 木料 p 被剖切面（板局部的 cl）切出来的切口：板局部坐标、真实尺寸（不带显示收缩），凸多边形，从 cl.n 那边看逆时针；
+   没切到（不跨着平面）是 null。吸附用 —— 量尺寸、开槽、开洞都能吸切口的角和边（第三十版） */
+function capL(p,cl){
+  if(!cl) return null;
+  const mh=meshOf(p), es=[];
+  if(mh) mh.forEach(f=>f.forEach((q,i)=>es.push([q,f[(i+1)%f.length]])));
+  else{const b=boxOf(p), r=ringOf(p), y0=b.lo[1], y1=b.hi[1], n=r.length;
+    r.forEach((q,i)=>{const c=r[(i+1)%n];
+      es.push([[q[0],y0,q[1]],[c[0],y0,c[1]]],[[q[0],y1,q[1]],[c[0],y1,c[1]]],[[q[0],y0,q[1]],[q[0],y1,q[1]]])})}
+  const sd=q=>V.dot(cl.n,q)-cl.d, pts=[]; let mn=1e18, mx=-1e18;
+  es.forEach(e=>{const a=sd(e[0]), b=sd(e[1]); mn=Math.min(mn,a,b); mx=Math.max(mx,a,b);
+    if(Math.abs(a)<1e-9) pts.push(e[0]);
+    else if(Math.abs(b)>=1e-9&&(a>0)!==(b>0)){const t=a/(a-b); pts.push([0,1,2].map(k=>e[0][k]+(e[1][k]-e[0][k])*t))}});
+  if(!(mn<-1e-6&&mx>1e-6)) return null;
+  return planeHull(pts,cl.n)}
 /* rawHit 再加上吸附：loc = 吸附后的点，snap = 吸到了什么（都不够近就是面上的 raw，'f'） */
 function hitInfo(p,cx,cy,touch,ref,extra){
   const h=rawHit(p,cx,cy), c=snapOn(p,cx,cy,touch?18:10,ref,extra,null);
