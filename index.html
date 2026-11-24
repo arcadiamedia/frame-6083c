@@ -386,7 +386,12 @@ const D = {"mode":"frame","job":"6083C","levels":["Ground Floor","First Floor","
 const MASS=D.mode==='mass';
 const WORD=MASS?{model:'墙体模型',panels:'面墙',pieces:'块',piece:'墙块'}:{model:'框架模型',panels:'块 panel',pieces:'根构件',piece:'构件'};
 document.title = D.job ? D.job + " " + WORD.model : WORD.model;
-if(MASS) document.getElementById('kdsH').textContent='墙类型';
+/* 几面墙（墙体块模式里有地基 / 楼板的话另外数几块板） */
+const NSLAB=D.panels.filter(P=>P.sl).length;
+const NTRUSS=D.panels.filter(P=>P.sl===2).length;
+const NRW=D.panels.filter(P=>P.rw).length;          /* 屋面空间里的墙（户间墙、翼墙往上那一段）另外数 */
+const NPANELS=`${D.panels.length-NSLAB-NRW} ${WORD.panels}`+(NRW?` · ${NRW} 段翼墙往上（到屋架挑出底面）`:'')+(NSLAB-NTRUSS?` · ${NSLAB-NTRUSS} 块地基 / 楼板`:'')+(NTRUSS?` · ${NTRUSS} 块屋架`:'');
+if(MASS) document.getElementById('kdsH').textContent=D.panels.some(P=>P.sl)?'类型':'墙类型';
 
 /* ---------- 小型向量/矩阵 ---------- */
 const V={sub:(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],
@@ -425,7 +430,7 @@ D.panels.forEach((P,pi)=>{
   const mir=(ux*ny-uy*nx)<0;
   P.m.forEach((m,mi)=>{
     const ki=m[0],lab=m[1],x=m[2],y=m[3],z=m[4],dx=m[5],dy=m[6],dz=m[7];
-    const len=m[8],plies=m[9],mat=m[10],r0=m[11]||0,prof=m[12];
+    const len=m[8],plies=m[9],mat=m[10],r0=m[11]||0,prof=m[12],mesh=m[13];
     const rec=Math.abs(r0), enc=r0<0;     // enc：整根被前面那根包住，六个面都退
     /* 显示收缩：贴面接触的构件（双柱并排、横档顶柱侧、搭接板压柱）各面
        内退 0.5mm —— 共面深度打架和"贴合面边线透出"就此消失；与别的构件
@@ -433,7 +438,11 @@ D.panels.forEach((P,pi)=>{
        2.5mm；整根被前面那根包住的（enc）六个面都退、藏进去。只影响显示，JSON/GLB 里的尺寸原样。 */
     const S=0.5, ex=Math.min(S+(enc?2.5*rec:0),dx/4), ey=Math.min(S+2.5*rec,dy/4),
           ez=Math.min(S+(enc?2.5*rec:0),dz/4);
-    let ring;
+    let ring, faces;
+    if(mesh&&mesh.length>=4){
+      /* 一般多面体：面在局部坐标里从外面看逆时针；已就位板的嵌入是镜像（mir），翻一次正好朝外 */
+      faces=mesh.map(f=>{const g=f.map(q=>T(q[0],q[1],q[2])); return mir?g.reverse():g;});
+    }else{
     if(prof&&prof.length>=3){
       let mnx=1e18,mxx=-1e18,mnz=1e18,mxz=-1e18;
       prof.forEach(p1=>{mnx=Math.min(mnx,p1[0]);mxx=Math.max(mxx,p1[0]);
@@ -451,12 +460,13 @@ D.panels.forEach((P,pi)=>{
     const yA=y+ey, yB=y+dy-ey;
     const yl=mir?yA:yB, yh=mir?yB:yA;
     const lo=ring.map(p1=>T(p1[0],yl,p1[1])), hi=ring.map(p1=>T(p1[0],yh,p1[1]));
-    const faces=[lo.slice().reverse(),hi];
+    faces=[lo.slice().reverse(),hi];
     for(let i=0;i<n;i++) faces.push([lo[i],lo[(i+1)%n],hi[(i+1)%n],hi[i]]);
+    }
     const c=D.colors[ki], id=pieces.length;
     const tri0=tris.length, e0=edges.length, v0=GP.length/3;
     for(const f of faces){
-      const u=V.sub(f[1],f[0]), v=V.sub(f[2],f[0]), nn=V.norm(V.cross(u,v));
+      const nn=V.norm(nrmOf(f));
       const base=GP.length/3;
       for(const p1 of f){
         GP.push(p1[0],p1[1],p1[2]); GN.push(nn[0],nn[1],nn[2]);
@@ -546,6 +556,128 @@ const bIdx=gl.createBuffer(), bEIdx=gl.createBuffer();
 const uintOK=gl.getExtension('OES_element_index_uint');
 let idxCount=0, edgeCount=0;
 
+/* ---------- 剖面填充 ---------- */
+/* 用户（2026-11-24，第二十九版）：「我们先做剖面填充，填充无论材质，统一采用斜线显示」。
+   原来剖切只是在着色器里把切掉的那半边不画（main 的 FS 里 vCut>0 就 discard），木料切开了是空的，能看穿到后面。
+   现在剖切面切到的每一根木料，切口画成一块：浅色的底 + 斜线 + 深色描边，不分材质、不跟构件颜色。
+   · 切口怎么算：每根木料都是凸的（轮廓环 × 板厚的柱体，或者屋架那种一般凸多面体），平面切凸体，切口就是凸多边形 ——
+     拿这根料画出来的每条棱（edges，和屏幕上画的是同一套顶点，带着 0.5 的显示收缩）跟平面求交，交点投到面里
+     (CU, CV) 取凸包，扇形分成三角形。只算真的跨着平面的（两边都超出 1e-4 毫米）；贴着平面的不算切到。
+     爆炸开着：每块板平移 PEXP×expK，平面在这块板自己的坐标里挪一下就行（off）；顶点照常带着爆炸方向，
+     着色器里一起挪，正好落回平面上。
+   · 什么时候重算：剖切面（CN / CD / CU）、爆炸、楼层 / 类型的勾选（geoVer）变了 —— draw 里比一下 capKey。
+     几千根料一回只要几毫秒，拖剖切深度的滑块时每一帧都跟着算。
+   · 斜线：剖切面里顺着 (CU − CV) 量，每 S 毫米一条（"/" 那个方向）。S 取 2 的整数次幂，让屏幕上的间距落在
+     5～10 个像素（hatchMM）—— 远看近看都是一样疏密的斜线；斜线钉在模型上，平移、旋转跟着走，缩放过了一档
+     才换一回疏密，不会边缩边滑。线宽一个像素，按离线中心多少像素做抗锯齿。
+   · 拾取：切口也画进拾取那一遍（同一根料的号），点在切口上就是点中这根料；rawHit 里视线先打在切口上的那一点。 */
+const VSC=`
+attribute vec3 aPos; attribute vec2 aExp; attribute float aId;
+uniform mat4 uMVP; uniform float uExpK; uniform float uZBias; uniform vec3 uEye; uniform vec3 uFwd; uniform float uOrtho;
+uniform vec3 uHU; uniform vec3 uHV; uniform float uHS; uniform float uS0;
+varying float vS; varying vec3 vId;
+vec3 idcol(float i){ float r=mod(i,256.0); float g=mod(floor(i/256.0),256.0);
+  float b=floor(i/65536.0); return vec3(r,g,b)/255.0; }
+void main(){
+  vec3 p=aPos; p.xy += aExp*uExpK;
+  /* 离起算的那条斜线隔了几条（顶点里按高精度算、减掉画面中间附近的整数条，片元里只剩小数） */
+  vS=(dot(p,uHU)-dot(p,uHV))*0.70710678/uHS-uS0;
+  if(uZBias>0.0){ p += (uOrtho>0.5 ? -uFwd : normalize(uEye-p))*uZBias; }
+  gl_Position=uMVP*vec4(p,1.0);
+  vId=idcol(aId);
+}`;
+const FSC=`
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
+varying float vS; varying vec3 vId;
+uniform float uPick; uniform float uMode; uniform float uHPx; uniform float uHW;
+void main(){
+  if(uPick>0.5){ gl_FragColor=vec4(vId,1.0); return; }
+  if(uMode>0.5){ gl_FragColor=vec4(0.22,0.17,0.11,1.0); return; }
+  float f=fract(vS), d=min(f,1.0-f)*uHPx;                 /* 离最近那条斜线多少像素 */
+  float a=clamp(uHW+0.5-d,0.0,1.0);
+  gl_FragColor=vec4(mix(vec3(0.84,0.80,0.72),vec3(0.24,0.20,0.15),a),1.0);
+}`;
+const PC=prog(VSC,FSC);
+const locC={pos:gl.getAttribLocation(PC,'aPos'),exp:gl.getAttribLocation(PC,'aExp'),id:gl.getAttribLocation(PC,'aId'),
+ mvp:gl.getUniformLocation(PC,'uMVP'),expk:gl.getUniformLocation(PC,'uExpK'),zbias:gl.getUniformLocation(PC,'uZBias'),
+ eye:gl.getUniformLocation(PC,'uEye'),fwd:gl.getUniformLocation(PC,'uFwd'),ortho:gl.getUniformLocation(PC,'uOrtho'),
+ hu:gl.getUniformLocation(PC,'uHU'),hv:gl.getUniformLocation(PC,'uHV'),hs:gl.getUniformLocation(PC,'uHS'),
+ s0:gl.getUniformLocation(PC,'uS0'),pick:gl.getUniformLocation(PC,'uPick'),mode:gl.getUniformLocation(PC,'uMode'),
+ hpx:gl.getUniformLocation(PC,'uHPx'),hw:gl.getUniformLocation(PC,'uHW')};
+/* CAP：现在的切口。pos / exp / id 三角形的顶点，lp / le 描边的线段；n、nl 顶点数；cut 切到了几根 */
+const CAP={bP:gl.createBuffer(),bE:gl.createBuffer(),bI:gl.createBuffer(),bLP:gl.createBuffer(),bLE:gl.createBuffer(),
+  pos:[],exp:[],id:[],lp:[],le:[],n:0,nl:0,cut:0};
+let capKey='', geoVer=0;
+/* 斜线隔多少毫米一条：屏幕上 7 个像素上下（k：这里每毫米合几个设备像素，dpr：一个 CSS 像素合几个设备像素），取 2 的整数次幂 */
+function hatchMM(k,dpr){return Math.pow(2,Math.round(Math.log2(7*dpr/Math.max(k,1e-9))))}
+/* 一根木料 p 被平面 (n, d) 切出来的切口：凸多边形的顶点（世界坐标，没爆炸），从 +n 那边看逆时针；没切到就是 null。
+   off：这块板爆炸挪出去的那一截在 n 上的分量 */
+function capOf(p,n,d,u,v,off){
+  let mn=1e18, mx=-1e18; const dv=new Float64Array(p.v1-p.v0);
+  for(let i=p.v0;i<p.v1;i++){const t=n[0]*GP[3*i]+n[1]*GP[3*i+1]+n[2]*GP[3*i+2]+off-d; dv[i-p.v0]=t; if(t<mn)mn=t; if(t>mx)mx=t}
+  if(!(mn<-1e-4&&mx>1e-4)) return null;
+  const pts=[];
+  const add=w=>pts.push([V.dot(w,u),V.dot(w,v),w]);
+  for(let k=p.e0;k<p.e1;k+=2){const a=edges[k], b=edges[k+1], da=dv[a-p.v0], db=dv[b-p.v0];
+    if((da>0)===(db>0)){ if(Math.abs(da)<1e-7) add([GP[3*a],GP[3*a+1],GP[3*a+2]]); continue }
+    const t=da/(da-db);
+    add([GP[3*a]+(GP[3*b]-GP[3*a])*t, GP[3*a+1]+(GP[3*b+1]-GP[3*a+1])*t, GP[3*a+2]+(GP[3*b+2]-GP[3*a+2])*t])}
+  /* 凸包（单调链）：在面里 (u, v) 逆时针；重复的、共线的点去掉 */
+  pts.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+  const cr=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]), lo=[], up=[];
+  for(const q of pts){while(lo.length>1&&cr(lo[lo.length-2],lo[lo.length-1],q)<=1e-9)lo.pop();lo.push(q)}
+  for(let i=pts.length-1;i>=0;i--){const q=pts[i];while(up.length>1&&cr(up[up.length-2],up[up.length-1],q)<=1e-9)up.pop();up.push(q)}
+  const h=lo.slice(0,-1).concat(up.slice(0,-1));
+  return h.length>=3?h.map(q=>q[2]):null;
+}
+/* 把现在看得见的木料全切一遍，装进 CAP（剖切关着就清空） */
+function buildCaps(){
+  const pos=[], exp=[], id=[], lp=[], le=[]; let cut=0;
+  if(clipOn) pieces.forEach(p=>{
+    if(!showLv.has(p.lv)||!showKd.has(p.ki)) return;
+    const ex=GE[2*p.v0], ey=GE[2*p.v0+1], h=capOf(p,CN,CD,CU,CV,(CN[0]*ex+CN[1]*ey)*expK);
+    if(!h) return;
+    cut++;
+    const pid=GI[p.v0];
+    for(let i=1;i<h.length-1;i++) for(const q of [h[0],h[i],h[i+1]]){pos.push(q[0],q[1],q[2]);exp.push(ex,ey);id.push(pid)}
+    for(let i=0;i<h.length;i++) for(const q of [h[i],h[(i+1)%h.length]]){lp.push(q[0],q[1],q[2]);le.push(ex,ey)}
+  });
+  Object.assign(CAP,{pos,exp,id,lp,le,n:pos.length/3,nl:lp.length/3,cut});
+  const up=(b,a)=>{gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(a),gl.DYNAMIC_DRAW)};
+  up(CAP.bP,pos);up(CAP.bE,exp);up(CAP.bI,id);up(CAP.bLP,lp);up(CAP.bLE,le);
+}
+/* 画切口（在主程序的面、边线之后；拾取那一遍也画，用同一根料的号） */
+function drawCaps(mvp,pick,e,c,fwn,h){
+  const ck=clipOn?[CN.join(),CD,CU.join(),expK,geoVer].join('|'):'';
+  if(ck!==capKey){capKey=ck;buildCaps()}
+  if(!CAP.n) return;
+  gl.useProgram(PC);
+  gl.uniformMatrix4fv(locC.mvp,false,new Float32Array(mvp));
+  gl.uniform1f(locC.expk,expK);gl.uniform1f(locC.pick,pick?1:0);
+  gl.uniform3f(locC.eye,e[0],e[1],e[2]);gl.uniform3f(locC.fwd,fwn[0],fwn[1],fwn[2]);gl.uniform1f(locC.ortho,orthoOn?1:0);
+  const dpr=Math.max(.5,cv.width/Math.max(1,cv.clientWidth||innerWidth)||1), k=Math.max(1e-9,(h/2)/(dist*Math.tan(0.36))), S=hatchMM(k,dpr),
+        sT=(V.dot(c,CU)-V.dot(c,CV))*Math.SQRT1_2;
+  gl.uniform3f(locC.hu,CU[0],CU[1],CU[2]);gl.uniform3f(locC.hv,CV[0],CV[1],CV[2]);
+  gl.uniform1f(locC.hs,S);gl.uniform1f(locC.s0,Math.floor(sT/S));gl.uniform1f(locC.hpx,S*k);gl.uniform1f(locC.hw,.5*dpr);
+  /* 主程序的几个顶点属性先关掉（下一帧 draw 一开头会重新绑上） */
+  [loc.pos,loc.nrm,loc.col,loc.id,loc.exp].forEach(l=>{if(l>=0)gl.disableVertexAttribArray(l)});
+  const bind=(b,l,n)=>{if(l<0)return;gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.enableVertexAttribArray(l);gl.vertexAttribPointer(l,n,gl.FLOAT,false,0,0)};
+  bind(CAP.bP,locC.pos,3);bind(CAP.bE,locC.exp,2);bind(CAP.bI,locC.id,1);
+  gl.uniform1f(locC.mode,0);gl.uniform1f(locC.zbias,0);
+  gl.drawArrays(gl.TRIANGLES,0,CAP.n);
+  if(!pick&&CAP.nl){
+    if(locC.id>=0){gl.disableVertexAttribArray(locC.id);gl.vertexAttrib1f(locC.id,0)}
+    bind(CAP.bLP,locC.pos,3);bind(CAP.bLE,locC.exp,2);
+    gl.uniform1f(locC.mode,1);gl.uniform1f(locC.zbias,EDGE_BIAS_MM);
+    gl.drawArrays(gl.LINES,0,CAP.nl);
+  }
+  [locC.pos,locC.exp,locC.id].forEach(l=>{if(l>=0)gl.disableVertexAttribArray(l)});
+}
+
 /* ---------- 过滤与索引 ---------- */
 const showLv=new Set(D.levels.map((_,i)=>i));
 const showKd=new Set(D.kinds.map((_,i)=>i));
@@ -566,6 +698,7 @@ function loadVis(){
   showKd.clear();D.kinds.forEach((n,i)=>{if(!o.hk.includes(n))showKd.add(i)});
   syncFilters();rebuild();draw(false);return true}
 function rebuild(){
+  geoVer++;                                // 切口跟着重算（见「剖面填充」）
   const arr=[], earr=[];
   pieces.forEach(p=>{
     if(!showLv.has(p.lv)||!showKd.has(p.ki))return;
@@ -595,7 +728,13 @@ let yaw=-0.9,pitch=0.62,roll=0,dist=radius*2.6,pan=[0,0,0],wire=false,expK=0,
 /* 剖切面：CN·P > CD 的那一半不画。CN 是单位向量 —— 现在用着的那个视角的 Z 轴（朝着看的人），所以剖切面
    往屏幕里推就是 CD 变小；P 是画出来的位置（带爆炸）。clipOn=false：不剖切 */
 let CN=[0,0,1], CD=0, clipOn=false;
-function setClip(n,d){clipOn=!!n; if(n){CN=n.slice();CD=d}}
+/* CU / CV：剖切面里的两个方向，(CU, CV, CN) 是右手系 —— 切口上的斜线照它们走（见「剖面填充」）。俯视是世界 X / Y，
+   三点定的视角是它自己的 X / Y；没给的时候拿世界 X（太斜就拿 Z）投到面里 */
+let CU=[1,0,0], CV=[0,1,0];
+function setClip(n,d,u){clipOn=!!n; if(!n) return;
+  CN=n.slice();CD=d;
+  const a=u&&Math.abs(V.dot(u,n))<.999?u:(Math.abs(n[0])<.9?[1,0,0]:[0,0,1]), k=V.dot(a,n);
+  CU=V.norm([a[0]-n[0]*k,a[1]-n[1]*k,a[2]-n[2]*k]);CV=V.cross(n,CU)}
 function cutW(W){return clipOn&&W[0]*CN[0]+W[1]*CN[1]+W[2]*CN[2]>CD+1e-6}        // 这个世界点被切掉了
 function eye(){
   const cp=Math.cos(pitch),sp=Math.sin(pitch);
@@ -655,6 +794,8 @@ function draw(pick){
     gl.drawElements(gl.LINES,edgeCount,uintOK?gl.UNSIGNED_INT:gl.UNSIGNED_SHORT,0);
     gl.uniform1f(loc.line,0); gl.uniform1f(loc.zbias,0);
   }
+  /* 剖面填充：切到的木料，切口画成浅底 + 斜线 + 描边 */
+  if(clipOn||CAP.n) drawCaps(mvp,pick,e,c,[fw[0]/fl,fw[1]/fl,fw[2]/fl],h);
   /* 标注：高亮块接着画进同一张深度图，序号和尺寸线画到上面那张 2D 画布 */
   if(!pick){ MVP=mvp; drawMarks(mvp,e,[fw[0]/fl,fw[1]/fl,fw[2]/fl]); drawOv(); }
 }
@@ -879,7 +1020,15 @@ function showInfo(p){
   if(pickP!==(p||null)){pickP=p||null;rebuildMarks();if(MVP)draw(false)}
   if(!p){el.style.display='none';return}
   const P0=D.panels[p.pi], bx=boxOf(p);
-  const rows=MASS?[
+  const rows=MASS&&P0.sl?[            // 地基 / 楼板
+    ['名称',P0.n],
+    ['楼层',D.levels[P0.lv]||'—'],
+    ['类型',D.kinds[p.ki]],
+    [P0.sl===2?'高':'厚',Math.round(p.dz)+' mm'],
+    ['这一块',`${Math.round(p.dx)} × ${Math.round(p.dy)}`],
+    ['顶标高',Math.round(P0.tr[2]+bx.hi[2])+' mm'],
+    ['底标高',Math.round(P0.tr[2]+bx.lo[2])+' mm'],
+  ].concat(P0.info||[]):MASS?[
     ['墙',P0.n],
     ['楼层',D.levels[P0.lv]||'—'],
     ['类型',D.kinds[p.ki]],
@@ -1000,7 +1149,7 @@ function hud(){
   const bad=D.panels.filter(p=>!p.ok).length;
   const np=D.panels.filter(p=>!p.placed).length;
   document.getElementById('hud').innerHTML=
-    `显示 ${vis} / ${pieces.length} ${WORD.pieces} · ${D.panels.length} ${WORD.panels}`+
+    `显示 ${vis} / ${pieces.length} ${WORD.pieces} · ${NPANELS}`+
     (bad?` · <span style="color:var(--bad)">${bad} 块对账未通过</span>`:'')+
     (np?` · ${np} 块未定位（平铺）`:'')+
     (TOUCH?' &nbsp;|&nbsp; 单指旋转 · 双指捏合缩放、拖动平移 · 轻点查看'+WORD.piece
@@ -1032,7 +1181,7 @@ function syncFilters(){     // 按 showLv / showKd 重画两组勾选框（回�
 }
 syncFilters();
 document.getElementById('sub').textContent=
-  `${D.panels.length} ${WORD.panels} · ${pieces.length} ${WORD.pieces}`;
+  `${NPANELS} · ${pieces.length} ${WORD.pieces}`;
 
 /* 用户（2026-11-15）：视图只留「俯视」和「正交」，轴测、正视、侧视、线框、边线、全览都去掉；别的方向用
    「三点定义视角」自己定（见下面「视角」一节）。俯视：真垂直（正交下与平面图完全一致） */
@@ -1100,7 +1249,12 @@ const AX=[[1,0,0],[0,1,0],[0,0,1]], AXC=['#ff5a4f','#45d168','#4aa3ff'], AXL=['X
 const SHOWN={r:'相对',a:'绝对',ar:'绝对+相对'};                             // 读数怎么写
 const SNAPN={v:'顶点',m:'中点',c:'圆心',p:'垂足',e:'边线',f:'面上'};
 const NARROW=matchMedia('(max-width:760px),(pointer:coarse)');
-const PIDX=new Map(D.panels.map((P0,i)=>[P0.n,i]));
+/* 板的身份：事项（an.pn、尺寸的端点）挂在它上。墙体块模型有后台 ID（k），墙改名不丢；框架模型没有，就是板号。
+   名字也收进来当后备，旧页面里按名字挂的事项照样找得到 */
+const PK=P0=>P0.k||P0.n;
+const PIDX=new Map(D.panels.map((P0,i)=>[PK(P0),i]));
+D.panels.forEach((P0,i)=>{if(!PIDX.has(P0.n))PIDX.set(P0.n,i)});
+function PNM(pn){const i=PIDX.get(pn);return i===undefined?pn:D.panels[i].n}     // 显示用：身份 → 现在的名字
 const PMAP=new Map(); pieces.forEach(p=>PMAP.set(p.pi+':'+p.mi,p));
 /* 每块板的爆炸方向 —— 与上面逐顶点写进 aExp 的是同一个算式 */
 const PEXP=D.panels.map(P0=>{const dx=P0.tr[0]-center[0],dy=P0.tr[1]-center[1],L=Math.hypot(dx,dy)||1;return [dx/L,dy/L];});
@@ -1213,6 +1367,13 @@ function w2s(w){const m=MVP;
   return [(x/q*.5+.5)*cv.clientWidth, (1-(y/q*.5+.5))*cv.clientHeight, q]}
 
 /* ---------- 一根木料的准确外形（数据里的尺寸，不是显示时内缩过的） ---------- */
+/* 面的法线（Newell，没归一化）：头几个点共线也不怕 */
+function nrmOf(f){const n=[0,0,0];
+  for(let i=0;i<f.length;i++){const a=f[i],b=f[(i+1)%f.length];
+    n[0]+=(a[1]-b[1])*(a[2]+b[2]); n[1]+=(a[2]-b[2])*(a[0]+b[0]); n[2]+=(a[0]-b[0])*(a[1]+b[1]);}
+  return n}
+/* 一般多面体的面（局部坐标，从外面看逆时针）；不是多面体就是 null */
+function meshOf(p){return D.panels[p.pi].m[p.mi][13]||null}
 function ringOf(p){const pr=D.panels[p.pi].m[p.mi][12];
   return (pr&&pr.length>=3)?pr:[[p.x,p.z],[p.x+p.dx,p.z],[p.x+p.dx,p.z+p.dz],[p.x,p.z+p.dz]]}
 function boxOf(p){let x0=1e18,x1=-1e18,z0=1e18,z1=-1e18;
@@ -1245,9 +1406,21 @@ function rawHit(p,cx,cy){
   let best=null;
   const cut=t=>cl&&cl.n[0]*(o[0]+d[0]*t)+cl.n[1]*(o[1]+d[1]*t)+cl.n[2]*(o[2]+d[2]*t)>cl.d+1e-6,       // 打中的这一点被剖掉了
         take=(t,na)=>{if(t>1e-6&&!cut(t)&&(!best||t<best.t))best={t,na}};
-  if(Math.abs(d[1])>1e-9) for(const yc of [y0,y1]){const t=(yc-o[1])/d[1];
+  const mh=meshOf(p);
+  if(mh) for(const f of mh){const nn=nrmOf(f), den=V.dot(nn,d); if(Math.abs(den)<1e-12) continue;
+    const t=V.dot(nn,V.sub(f[0],o))/den, q=[o[0]+d[0]*t,o[1]+d[1]*t,o[2]+d[2]*t];
+    let ok=true;
+    for(let i=0;i<f.length&&ok;i++){const a=f[i],c=f[(i+1)%f.length]; if(V.dot(V.cross(V.sub(c,a),V.sub(q,a)),nn)<-1e-6) ok=false}
+    const an=nn.map(Math.abs); if(ok) take(t,an[0]>=an[1]&&an[0]>=an[2]?0:an[1]>=an[2]?1:2)}
+  if(!mh&&Math.abs(d[1])>1e-9) for(const yc of [y0,y1]){const t=(yc-o[1])/d[1];
     if(inPoly(ring,o[0]+d[0]*t,o[2]+d[2]*t)) take(t,1)}
-  for(let i=0;i<ring.length;i++){
+  /* 剖开了的：切口上画着斜线（第二十九版起），视线先打在切口上 —— 平面上那一点在这根料里面就算 */
+  if(cl){const nd=V.dot(cl.n,d);
+    if(Math.abs(nd)>1e-12){const t=(cl.d-V.dot(cl.n,o))/nd, q=[o[0]+d[0]*t,o[1]+d[1]*t,o[2]+d[2]*t];
+      const inside=mh?mh.every(f=>V.dot(nrmOf(f),V.sub(q,f[0]))<=1e-6)
+                     :q[1]>=y0-1e-6&&q[1]<=y1+1e-6&&inPoly(ring,q[0],q[2]);
+      if(inside){const an=cl.n.map(Math.abs); take(t,an[0]>=an[1]&&an[0]>=an[2]?0:an[1]>=an[2]?1:2)}}}
+  if(!mh) for(let i=0;i<ring.length;i++){
     const a=ring[i], c=ring[(i+1)%ring.length], ex=c[0]-a[0], ez=c[1]-a[1];
     const den=d[0]*ez-d[2]*ex; if(Math.abs(den)<1e-9) continue;
     const t=((a[0]-o[0])*ez-(a[1]-o[2])*ex)/den, s=((a[0]-o[0])*d[2]-(a[1]-o[2])*d[0])/den;
@@ -1283,8 +1456,10 @@ function snapOn(p,cx,cy,thr,ref,extra,seen){
     const dd=Math.hypot(s[0]-cx,s[1]-cy); if(dd>=thr||(seen&&!seen(s[0],s[1]))) return;
     const c={q,kind,rank,dd,z:-V.dot(V.sub(w,cb.e),cb.z)}; if(better(c,best)) best=c };
   /* 这根木料看得见的棱：两个面上的轮廓各一圈，加上连着两个面的那几条 */
-  const segs=[];
-  ring.forEach((q,i)=>{const c=ring[(i+1)%n], A0=[q[0],y0,q[1]], A1=[q[0],y1,q[1]],
+  const segs=[], mh=meshOf(p);
+  if(mh) mh.forEach(f=>{ if(V.dot(ev(f[0]),nrmOf(f))<=0) return;
+    f.forEach((q,i)=>{segs.push([q,f[(i+1)%f.length]]); tryPt(q,'v',0)}) });
+  else ring.forEach((q,i)=>{const c=ring[(i+1)%n], A0=[q[0],y0,q[1]], A1=[q[0],y1,q[1]],
       up=fS(i-1,A0)||fS(i,A0), f0=fY(A0,-1), f1=fY(A1,1);      // up：连着两个面的那条棱看不看得见
     if(f0||fS(i,A0)) segs.push([A0,[c[0],y0,c[1]]]);
     if(f1||fS(i,A1)) segs.push([A1,[c[0],y1,c[1]]]);
@@ -2430,7 +2605,7 @@ function vwSetZc(id,zc){const v=vwGet(id);
 /* 把用着的那个视角的剖切面交给画图的（CN / CD） */
 function vwClip(){
   if(vwOn!=='top'&&!vwGet(vwOn)) vwOn='top';
-  const zc=vwZc(vwOn); if(zc==null) setClip(null); else setClip(vwAxes(vwGet(vwOn)).z,zc)}
+  const zc=vwZc(vwOn), a=vwAxes(vwGet(vwOn)); if(zc==null) setClip(null); else setClip(a.z,zc,a.x)}
 /* 剖切深度写成什么：俯视写标高；别的写离原点那个面多远、在哪一侧 */
 function vwClipText(id){const v=vwGet(id), c=v?v.clip:topClip;
   if(c==null) return '全部';
@@ -2558,8 +2733,8 @@ function snapAt(cx,cy,touch,ref){
   nb.ids.forEach(id=>{const q=pieces[id-1]; if(!q) return;
     const c=snapOn(q,cx,cy,thr,rw?W2L0(q.pi,rw):null,holeCtrs(q),q===p?null:(x,y)=>nb.shows(id,x,y));
     if(c&&better(c,best)){best=c;bq=q}});
-  if(best) return {pi:bq.pi,pn:D.panels[bq.pi].n,p:r3(best.q),kind:best.kind};
-  return p?{pi:p.pi,pn:D.panels[p.pi].n,p:r3(rawHit(p,cx,cy).raw),kind:'f'}:null;
+  if(best) return {pi:bq.pi,pn:PK(D.panels[bq.pi]),p:r3(best.q),kind:best.kind};
+  return p?{pi:p.pi,pn:PK(D.panels[p.pi]),p:r3(rawHit(p,cx,cy).raw),kind:'f'}:null;
 }
 /* 从世界点 o 出发的模型三根轴：near = 鼠标在屏幕上挨着哪根（没有就 -1），best = 从 o 到鼠标的
    方向最像哪根。几乎正对着镜头的那根轴在屏幕上缩成一个点，不参加 */
@@ -2824,7 +2999,7 @@ function cutAt(cx,cy,touch,Wt){
    先给 45；深默认 20。都在设置里改 */
 function makeCut(r){
   const p=r.p, b=boxOf(p), wa=3-r.na-r.ax, ext=k=>b.hi[k]-b.lo[k];
-  const an={type:'notch',pn:D.panels[p.pi].n,mi:p.mi,ms:sig(p),box:[0,0,0,0,0,0],pt:r3(r.p1),
+  const an={type:'notch',pn:PK(D.panels[p.pi]),mi:p.mi,ms:sig(p),box:[0,0,0,0,0,0],pt:r3(r.p1),
     g:{na:r.na,ns:r.ns,ax:r.ax,wa,sh:'c',d:25,L:r.L,W:ext(wa)<=150?r1(ext(wa)):45,Dp:Math.min(20,r1(ext(r.na))),
        s0:r1(r.p1[r.ax]-b.lo[r.ax]),sg:r.sg,o0:r1(r.p1[wa]-b.lo[wa]),pos:0,off:0}};
   cutBox(an);return an;
@@ -2959,7 +3134,7 @@ function realPt(P,cx,cy,touch){
   if(T==='notch'){
     tool.cut={p:cd.p,na:f.na,ns:f.ns,p1:r3(cd.l),raw:cd.l.slice(),lock:-1,sLock:-1,ax:-1};cutInit(tool.cut);
     hover=null;hud();undoBtns();if(hovXY)hoverNow();else draw(false);return true}
-  const an={type:'hole',pn:D.panels[cd.p.pi].n,mi:cd.p.mi,ms:sig(cd.p)};
+  const an={type:'hole',pn:PK(D.panels[cd.p.pi]),mi:cd.p.mi,ms:sig(cd.p)};
   endTool();initCut(an,cd.p,{raw:cd.l,na:f.na,ns:f.ns});addAnn(an);return true;
 }
 /* 有引导点时输入的长度：从最后一个引导点，顺着鼠标指的方向（没有鼠标就照锁的那根轴；负数 = 反过来） */
@@ -3080,7 +3255,7 @@ function toolTap(cx,cy,touch){
     const an=makeCut(r);endTool();addAnn(an);return}
   const p=pickPiece(cx,cy);
   if(!p){draw(false);toast('请点在木料上');return}
-  const h=hitInfo(p,cx,cy,touch), base={pn:D.panels[p.pi].n,mi:p.mi,ms:sig(p)};
+  const h=hitInfo(p,cx,cy,touch), base={pn:PK(D.panels[p.pi]),mi:p.mi,ms:sig(p)};
   if(T==='notch'){                                // 开槽第一下：起点，落在点中的那个面上
     const b=boxOf(p), p1=h.loc.slice(); p1[h.na]=h.ns>0?b.hi[h.na]:b.lo[h.na];
     tool.cut={p,na:h.na,ns:h.ns,p1:r3(p1),raw:h.raw.slice(),lock:-1,sLock:-1,ax:-1};cutInit(tool.cut);hover=null;hud();undoBtns();if(hovXY)hoverNow();else draw(false);return}
@@ -3289,9 +3464,9 @@ function counts(){                       // 清单里一共几条、还有几条
 function tname(an){return an.type==='dim'&&an.chain?'连续尺寸':TYPES[an.type]}
 function where(an){
   if(!placed(an)) return '';
-  if(an.type==='dim'){const s=Array.from(new Set(an.pts.map(q=>q.pn)));
+  if(an.type==='dim'){const s=Array.from(new Set(an.pts.map(q=>PNM(q.pn))));
     return s.length>2?s[0]+' 等 '+s.length+' 块板':s.join(' → ')}
-  const p=pieceOf(an), nm=q=>D.kinds[q.ki]+(q.lab?' '+q.lab:''), s=an.pn+(p?' · '+nm(p):'');
+  const p=pieceOf(an), nm=q=>D.kinds[q.ki]+(q.lab?' '+q.lab:''), s=PNM(an.pn)+(p?' · '+nm(p):'');
   /* 跨了木料的槽：后面接着写开到了哪几根（别的板上的带板号）；多了就只写一共几根 */
   const more=cutParts(an).slice(1);
   if(!more.length) return s;
